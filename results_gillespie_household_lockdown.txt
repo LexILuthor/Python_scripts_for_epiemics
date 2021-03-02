@@ -1,0 +1,3 @@
+the maximum number of infected at the same time is 2246216.75 and it is reached at time 49.765721000000006
+The total number of infected is 37191658.32
+we got a major outbreak 83 of the times

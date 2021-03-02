@@ -1,0 +1,2 @@
+the maximum number of infected at the same time is 7344743.831325301 (variance 3706.9889148636985 )  and it is reached at time 64.65281445783133 with variance 5.450030849103197The total number of infected is 56879560.0 (variance 3378.6823445749037 )
+we got a major outbreak 83.0% of the times
