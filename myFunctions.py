@@ -1,29 +1,45 @@
 from math import comb
 import numpy as np
+import r_star as r
 import matplotlib.pyplot as plt
 import math
 
 
 def q(nh, k, betaH, gamma):
-    if nh > 3:
-        return gamma / (gamma + k * betaH)
-    if nh <= 3:
-        if k == 2:
-            return gamma / ((2 / 3) * betaH + gamma)
-        if k == 1:
-            return (18 * betaH * gamma * gamma) / ((betaH + 3 * gamma) * (betaH + 3 * gamma) * (2 * betaH + 3 * gamma))
-        if k == 0:
-            return (2 * betaH * betaH * (betaH + 6 * gamma)) / (
-                    (betaH + 3 * gamma) * (betaH + 3 * gamma) * (2 * betaH + 3 * gamma))
-        if k == 3:
-            print("3 people not infected in a household of three people :O")
-            return 0
+    return gamma / (gamma + k * betaH)
+
+
+def compute_q_using_transition_matrix(nh, betaH, gamma, nu):
+    transition_matrix, states_to_id, id_to_states = r.get_transition_matrix(nh, betaH, nu, gamma, 1)
+    id_target_state = np.zeros(nh, dtype=int)
+    for k in range(nh):
+        id_target_state[k] = int(states_to_id[(int(k), 0, 0)])
+
+    old_distribution = np.zeros(len(transition_matrix[0, :]))
+    current_distribution = np.zeros(len(transition_matrix[0, :]))
+
+    id_initial_state = states_to_id[(nh - 1, 0, 1)]
+    current_distribution[id_initial_state] = 1
+
+    while not ((old_distribution == current_distribution).all()):
+        old_distribution = current_distribution
+        current_distribution = np.matmul(transition_matrix, old_distribution)
+
+    q = np.zeros(nh)
+    for k in range(nh):
+        q[k] = current_distribution[id_target_state[k]]
+    return q
 
 
 def p(nh, a, m, s, betaH, gamma, nu):
     summation = 0
+    q_from_matrix = compute_q_using_transition_matrix(nh, betaH, gamma, nu)
     for k in range(m, s):
-        summation = summation + pow(-1, k - m) * comb(s - m, k - m) * pow(q(nh, k, betaH, gamma), a)
+        # two options
+        # here we use the exact same formula as Pellis to compute q(k)
+        # summation = summation + pow(-1, k - m) * comb(s - m, k - m) * pow(q(nh, k, betaH, gamma), a)
+        # here we use the transition matrix
+        summation = summation + pow(-1, k - m) * comb(s - m, k - m) * pow(q_from_matrix[k], a)
     return comb(a, m) * summation
 
 
@@ -52,7 +68,8 @@ def get_path_of(algorithm):
         return "../Gillespie_algorithm/OutputFIle/gillespie"
     if (algorithm.lower() == "sellke"):
         return "../Sellke/OutputFile/sellke"
-    print("error, the possibie choice are: gillespie, sellke, gillespie_household, gillespie_household_lockdown, test")
+    print(
+        "error, the possibie choice are: gillespie, sellke, gillespie_household, gillespie_household_lockdown, test")
     exit()
 
 
@@ -97,7 +114,7 @@ def print_simulation(time, cumulative_cases, ax, parameters):
 def g_nh(x, nh, betaG, betaH, gamma, nu):
     summation = 0
     for i in range(nh):
-        summation = summation + betaG * mu(nh, 1, nh - 1, int(i), betaH, gamma, nu) / pow(x, int(i) + 1)
+        summation = summation + (betaG / gamma) * mu(nh, 1, nh - 1, int(i), betaH, gamma, nu) / pow(x, int(i) + 1)
     return 1 - summation
 
 
@@ -117,15 +134,15 @@ def initialize_row_of_transition_matrix(id_starting_state, transition_matrix, id
 
         if new_exposed_probability > 0:
             arrival_state = states_to_id[(S - 1, E + 1, I)]
-            transition_matrix[id_starting_state][arrival_state] = new_exposed_probability
+            transition_matrix[arrival_state][id_starting_state] = new_exposed_probability
 
         if new_infected_probability > 0:
             arrival_state = states_to_id[(S, E - 1, I + 1)]
-            transition_matrix[id_starting_state][arrival_state] = new_infected_probability
+            transition_matrix[arrival_state][id_starting_state] = new_infected_probability
 
         if new_recovered_probability > 0:
             arrival_state = states_to_id[(S, E, I - 1)]
-            transition_matrix[id_starting_state][arrival_state] = new_recovered_probability
+            transition_matrix[arrival_state][id_starting_state] = new_recovered_probability
 
 
 def transfer_probability(beta, nu, gamma, from_S, from_E, from_I, to_S, to_E, to_I, nh):

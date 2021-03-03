@@ -18,12 +18,13 @@ nu = 0.21
 
 tot_simulations = 0
 
-# print("R* is: " + str(r.Rstar(nh, betaG, betaH, gamma, nu)) + "\n")
+Rstar = r.Rstar(nh, betaG, betaH, gamma, nu)
+print("R* is: " + str(Rstar) + "\n")
 
-states_to_id, id_to_states, number_of_states = r.states(nh)
-print(number_of_states)
+#states_to_id, id_to_states, number_of_states = r.states(nh)
+#print(number_of_states)
 
-# transition_matrix = r.get_transition_matrix(nh, betaH, nu, gamma)
+# transition_matrix,states_to_id, id_to_states = r.get_transition_matrix(nh, betaH, nu, gamma)
 # print(transition_matrix)
 
 algorithm = "gillespie_household"
