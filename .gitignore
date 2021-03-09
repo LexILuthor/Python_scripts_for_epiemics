@@ -1,2 +1,7 @@
+# Files
+
+*.png
+*.txt
+
 # Project exclude paths
 /venv/

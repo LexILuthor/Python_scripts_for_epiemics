@@ -18,22 +18,42 @@ nu = 0.21
 
 tot_simulations = 0
 
-Rstar = r.Rstar(nh, betaG, betaH, gamma, nu)
-print("R* is: " + str(Rstar) + "\n")
+# available
+# functions:
 
-#states_to_id, id_to_states, number_of_states = r.states(nh)
-#print(number_of_states)
-
-# transition_matrix,states_to_id, id_to_states = r.get_transition_matrix(nh, betaH, nu, gamma)
-# print(transition_matrix)
 
 algorithm = "gillespie_household"
 
-# ad.exponential_regression(algorithm, 0)
+outputR = open("results_on_various_r.txt", "w")
 
-# print("R0 Household is: " + str(r.R_0_Household(nh, betaG, betaH, gamma, nu)) + "\n")
+# estimates r using a logistic regression
+# N:B. it is done following the numbered of Recovered individuals
+outputR.write("r estimated by the logistic regression in the " + algorithm + " algortithm is: " + str(
+    ad.logistic_regression(algorithm, tot_simulations)[0]) + "\n")
 
+# R_0 computed using r using formula given by Prof
+R0est = r.R0_from_r(algorithm, tot_simulations, nu, gamma)
+# print = ("R_0 computed using r " + R0est + "\n")
+outputR.write = ("R_0 computed using r: " + str(R0est) + "\n")
+
+# Rstar in a household model computed following section 2.3 Pellis_2 and appendix A of Pellis_1 to compute mu_k
+# dubbio riguardo a mu_G, per ora è calcolato come BetaG/gamma
+# (remember mu_G is the mean number of global contacts fo an individual)
+Rstar = r.Rstar(nh, betaG, betaH, gamma, nu)
+# print("R* is: " + str(Rstar) + "\n")
+outputR.write("R* is: " + str(Rstar) + "\n")
+
+# R_0 for the model with household computed following Pellis_1 corollary 1
+# dubbio riguardo a q(k) vedi quaderno come è stato calcolato
+R_0_Household = r.R_0_Household(nh, betaG, betaH, gamma, nu)
+# print("R0 Household is: " + str(R_0_Household) + "\n")
+outputR.write("R0 Household is: " + str(R_0_Household) + "\n")
+
+# get on a file the  spike of infected, S_infinity and much more in only one minute!
 # ad.analyze_my_data(algorithm, tot_simulations)
 
-
+# plot the gaphs of the simulations
 # myplot.plot_my_graph(algorithm, tot_simulations)
+
+
+outputR.close()

@@ -31,7 +31,7 @@ def analyze_my_data(algorithm, tot_simulations):
                          np.array(total_infected), major_outbreak)
 
 
-def exponential_regression(algorithm, tot_simulations):
+def logistic_regression(algorithm, tot_simulations):
     path = myFun.get_path_of(algorithm)
 
     # plot style
@@ -65,3 +65,4 @@ def exponential_regression(algorithm, tot_simulations):
         myFun.print_simulation(time, R, ax, parameters)
 
     fig.show()
+    return parameters
