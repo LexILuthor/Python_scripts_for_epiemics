@@ -120,6 +120,27 @@ def initialize_row_of_transition_matrix(id_starting_state, transition_matrix, id
             transition_matrix[id_starting_state][arrival_state] = new_recovered_probability
 
 
+def initialize_row_of_transition_matrix_not_normalized(id_starting_state, transition_matrix, id_to_states, states_to_id,
+                                                       beta, nu,
+                                                       gamma, nh):
+    S, E, I = id_to_states[id_starting_state]
+    new_exposed_probability = transfer_probability(beta, nu, gamma, S, E, I, S - 1, E + 1, I, nh)
+    new_infected_probability = transfer_probability(beta, nu, gamma, S, E, I, S, E - 1, I + 1, nh)
+    new_recovered_probability = transfer_probability(beta, nu, gamma, S, E, I, S, E, I - 1, nh)
+
+    if new_exposed_probability > 0:
+        arrival_state = states_to_id[(S - 1, E + 1, I)]
+        transition_matrix[id_starting_state][arrival_state] = new_exposed_probability
+
+    if new_infected_probability > 0:
+        arrival_state = states_to_id[(S, E - 1, I + 1)]
+        transition_matrix[id_starting_state][arrival_state] = new_infected_probability
+
+    if new_recovered_probability > 0:
+        arrival_state = states_to_id[(S, E, I - 1)]
+        transition_matrix[id_starting_state][arrival_state] = new_recovered_probability
+
+
 def states(nh, initial_infected=1):
     S = nh - initial_infected
     E = 0
@@ -158,14 +179,60 @@ def get_discrete_transition_matrix(nh, beta, nu, gamma, initial_infected=1):
     return transition_matrix, states_to_id, id_to_states
 
 
+def laplace_transform_infectious_profile(r, nh, betaG, transition_matrix, id_to_states, states_to_id, result=0):
+    slimmed_transition_matrix, absorbing_states = slim_transition_matrix(nh, transition_matrix, states_to_id)
+    number_of_states = len(transition_matrix[0])
+
+    matrix = slimmed_transition_matrix - (r * np.identity(number_of_states - nh))
+    Q_HI = np.linalg.inv(matrix)
+
+    ik = 0
+    for i in range(number_of_states - nh):
+        if ik in absorbing_states:
+            ik = ik + 1
+        result = result + betaG * id_to_states[ik][2] * (-Q_HI[1][i])
+        ik = ik + 1
+    return result
+
+
+def slim_transition_matrix(nh, transition_matrix, states_to_id):
+    number_of_states = len(transition_matrix[0])
+    slimmed_transition_matrix = np.zeros((number_of_states - nh, number_of_states - nh))
+    absorbing_states = [None]
+    for i in range(nh):
+        absorbing_states.append(states_to_id[(int(i), 0, 0)])
+
+    row_s = 0
+    column_s = 0
+    row_o = 0
+    column_o = 0
+    while row_s < (number_of_states - nh):
+        if row_o in absorbing_states:
+            row_o = row_o + 1
+        column_s = 0
+        column_o = 0
+
+        while column_s < (number_of_states - nh):
+            if column_o in absorbing_states:
+                column_o = column_o + 1
+            slimmed_transition_matrix[row_s][column_s] = transition_matrix[row_o][column_o]
+            column_s = column_s + 1
+            column_o = column_o + 1
+        row_s = row_s + 1
+        row_o = row_o + 1
+
+    return slimmed_transition_matrix, absorbing_states
+
+
 def get_continuous_transition_matrix(nh, beta, nu, gamma, initial_infected=1):
     states_to_id, id_to_states, number_of_states = states(nh, initial_infected)
     transition_matrix = np.zeros((number_of_states, number_of_states))
 
     # function in substitution to the map function
-    [initialize_row_of_transition_matrix(x, transition_matrix, id_to_states, states_to_id, beta, nu,
-                                         gamma, nh) for x in id_to_states]
+    [initialize_row_of_transition_matrix_not_normalized(x, transition_matrix, id_to_states, states_to_id, beta, nu,
+                                                        gamma, nh) for x in id_to_states]
 
+    # The following is to put on the diagonal the -(sum) of the row
     for i in range(number_of_states):
         transition_matrix[i][i] = 0
         transition_matrix[i][i] = -sum(transition_matrix[i])

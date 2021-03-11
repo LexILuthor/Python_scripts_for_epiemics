@@ -21,3 +21,39 @@ def R0_from_r(algorithm, tot_simulations, nu, gamma):
     r = ad.logistic_regression(algorithm, tot_simulations)[0]
     R0 = 1 + (r * (r + nu + gamma) / (nu * gamma))
     return R0
+
+
+def compute_growth_rate_r(nh, betaG, betaH, nu, gamma, a, b, initial_infected=1):
+    transition_matrix, states_to_id, id_to_states = myFun.get_continuous_transition_matrix(nh, betaH, nu, gamma,
+                                                                                           initial_infected)
+    # subtract to the diagonal of the matrix i_k (the matix delta in the article)
+    for i in range(len(transition_matrix[0])):
+        current_state = id_to_states[i]
+        transition_matrix[i][i] = transition_matrix[i][i] - gamma * current_state[2]
+
+    # find the solution of the laplace transform
+    root = brentq(myFun.laplace_transform_infectious_profile, a, b,
+                  (nh, betaG, transition_matrix, id_to_states, states_to_id, -1))
+    return root
+
+
+def compute_Rstar(nh, betaG, betaH, nu, gamma, initial_infected=1):
+    transition_matrix, states_to_id, id_to_states = myFun.get_continuous_transition_matrix(nh, betaH, nu, gamma,
+                                                                                           initial_infected)
+    # subtract to the diagonal of the matrix i_k (the matix delta in the article)
+    for i in range(len(transition_matrix[0])):
+        current_state = id_to_states[i]
+        transition_matrix[i][i] = transition_matrix[i][i] - gamma * current_state[2]
+
+    slimmed_transition_matrix, absorbing_states = myFun.slim_transition_matrix(nh, transition_matrix, states_to_id)
+    number_of_states = len(transition_matrix[0])
+    Q_1 = np.linalg.inv(slimmed_transition_matrix)
+
+    ik = 0
+    Rstar = 0
+    for i in range(number_of_states - nh):
+        if ik in absorbing_states:
+            ik = ik + 1
+        Rstar = Rstar + (- Q_1[1][i]) * id_to_states[ik][2]
+        ik = ik + 1
+    return betaG * Rstar

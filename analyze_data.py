@@ -45,24 +45,31 @@ def logistic_regression(algorithm, tot_simulations):
     R = data[3].values
     time = data[4].values
     cumulative_cases: ndarray = np.cumsum(I)
-    parameters, covariance = curve_fit(myFun.logistic_function, time, R, p0=(0.3, R[-1]),
-                                       bounds=([0, R[-1]-(R[-1]*0.0005)], np.inf), method='trf')
-    print(parameters)
+    parameters = np.zeros(tot_simulations)
+    tmp_parameters, covariance = curve_fit(myFun.logistic_function, time, R, p0=(0.3, R[-1]),
+                                           bounds=([0, R[-1] - (R[-1] * 0.0005)], np.inf), method='trf')
+    parameters[0] = tmp_parameters[0]
+
     ax.plot(time, R, linestyle='-', linewidth=0.2, color='#FF4000', label='data')
-    ax.plot(time, myFun.logistic_function(time, *parameters), linestyle='-', linewidth=0.2, color='#2E64FE',
+    ax.plot(time, myFun.logistic_function(time, *tmp_parameters), linestyle='-', linewidth=0.2, color='#2E64FE',
             label='estimation')
 
     ax.set_xlabel('time')
     ax.legend()
     for i in range(1, tot_simulations):
         data = pd.read_csv(filepath_or_buffer=path + str(i) + ".csv", header=None)
+        S = data[0].values
         I = data[2].values
         R = data[3].values
         time = data[4].values
+        if R[-1] < S[0] / 2:
+            continue
         cumulative_cases: ndarray = np.cumsum(I)
-        parameters, covariance = curve_fit(myFun.logistic_function, time, R, p0=(1, R[-1]),
-                                           bounds=(0, np.inf))
-        myFun.print_simulation(time, R, ax, parameters)
+        tmp_parameters, covariance = curve_fit(myFun.logistic_function, time, R, p0=(0.3, R[-1]),
+                                               bounds=([0, R[-1] - (R[-1] * 0.0005)], np.inf), method='trf')
+        parameters[i] = tmp_parameters[0]
+        myFun.print_simulation(time, R, ax, tmp_parameters)
 
     fig.show()
-    return parameters
+
+    return parameters.mean()
