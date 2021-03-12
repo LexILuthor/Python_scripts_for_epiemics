@@ -48,8 +48,7 @@ def plot_my_graph(algorithm, tot_simulations):
 
 def plot_lock_down(tot_simulations):
     path = myFun.get_path_of("gillespie_household_lockdown")
-    line_width = 0.2
-
+    line_width = 1
     # plot
     color_susceptible = '#2E64FE'
     color_exposed = '#555555'
@@ -62,7 +61,8 @@ def plot_lock_down(tot_simulations):
     plt.tight_layout()
 
     fig, ax = plt.subplots()
-    ax.set_xlim([40, 100])
+    ax.set_xlim([50, 80])
+    # ax.set_xlim([30, 80])
 
     # read the lock_down times
     lockdown_times = myFun.read_lockdown_times(path, iteration=0)
