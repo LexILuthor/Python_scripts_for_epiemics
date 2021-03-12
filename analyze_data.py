@@ -12,6 +12,7 @@ def analyze_my_data(algorithm, tot_simulations):
     infected_peak = []
     infected_peak_time = []
     total_infected = []
+    S_infinity_time = []
     major_outbreak = 0
     for i in range(0, tot_simulations):
         data = pd.read_csv(filepath_or_buffer=path + str(i) + ".csv", header=None)
@@ -25,10 +26,11 @@ def analyze_my_data(algorithm, tot_simulations):
             infected_peak.append(I[index])
             infected_peak_time.append(time[index])
             total_infected.append(R[-1])
+            S_infinity_time.append(time[-1])
             major_outbreak = major_outbreak + 1
 
     myFun.print_analysis(algorithm, tot_simulations, np.array(infected_peak), np.array(infected_peak_time),
-                         np.array(total_infected), major_outbreak)
+                         np.array(total_infected), major_outbreak, np.array(S_infinity_time))
 
 
 def logistic_regression(algorithm, tot_simulations):

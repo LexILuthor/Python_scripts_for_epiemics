@@ -1,8 +1,10 @@
 from math import comb
 import numpy as np
-import r_star as r
 import matplotlib.pyplot as plt
 import math
+import pandas as pd
+
+import r_star as r
 
 
 def q(nh, k, betaH, gamma):
@@ -51,20 +53,21 @@ def get_path_of(algorithm):
     exit()
 
 
-def plot_dataset(data, ax, color_susceptible, color_exposed, color_infected, color_recovered):
+def plot_dataset(data, ax, color_susceptible, color_exposed, color_infected, color_recovered, line_width=0.2):
     S = data[0].values
     E = data[1].values
     I = data[2].values
     R = data[3].values
     time = data[4].values
 
-    ax.plot(time, S, color=color_susceptible, linewidth=0.2, linestyle='-')
-    ax.plot(time, R, color=color_recovered, linewidth=0.2, linestyle='-')
-    ax.plot(time, E, color=color_exposed, linewidth=0.2, linestyle='-')
-    ax.plot(time, I, color=color_infected, linewidth=0.2, linestyle='-')
+    ax.plot(time, S, color=color_susceptible, linewidth=line_width, linestyle='-')
+    ax.plot(time, R, color=color_recovered, linewidth=line_width, linestyle='-')
+    ax.plot(time, E, color=color_exposed, linewidth=line_width, linestyle='-')
+    ax.plot(time, I, color=color_infected, linewidth=line_width, linestyle='-')
 
 
-def print_analysis(algorithm, tot_simulations, infected_peak, infected_peak_time, total_infected, major_outbreak):
+def print_analysis(algorithm, tot_simulations, infected_peak, infected_peak_time, total_infected, major_outbreak,
+                   S_infinity_time):
     outputResults = open("results_" + algorithm + ".txt", "w")
     outputResults.write("the maximum number of infected at the same time is " + str(infected_peak.mean()))
     outputResults.write(" (variance " + str(math.sqrt(infected_peak.var())) + " ) ")
@@ -72,7 +75,9 @@ def print_analysis(algorithm, tot_simulations, infected_peak, infected_peak_time
     outputResults.write(" with variance " + str(math.sqrt(infected_peak_time.var())))
     outputResults.write("The total number of infected is " + str(total_infected.mean()))
     outputResults.write(" (variance " + str(math.sqrt(total_infected.var())) + " )\n")
-    outputResults.write("we got a major outbreak " + str(100 * major_outbreak / tot_simulations) + "% of the times")
+    outputResults.write("we got a major outbreak " + str(100 * major_outbreak / tot_simulations) + "% of the times\n")
+    outputResults.write("in mean, S infinity is reached at time: " + str(S_infinity_time.mean()))
+    outputResults.write(" (variance: " + str(math.sqrt(S_infinity_time.var())) + " )\n")
 
     outputResults.close()
 
@@ -177,6 +182,46 @@ def get_discrete_transition_matrix(nh, beta, nu, gamma, initial_infected=1):
     [initialize_row_of_transition_matrix(x, transition_matrix, id_to_states, states_to_id, beta, nu,
                                          gamma, nh) for x in id_to_states]
     return transition_matrix, states_to_id, id_to_states
+
+
+def read_lockdown_times(path, iteration=0):
+    path = path + str(iteration) + "lock_down_time" + ".txt"
+    with open(path) as f:
+        content = f.readlines()
+
+    number_of_lockdowns = int(list(map(int, content[0].strip().split()))[0])
+
+    lock_down_start_end = np.zeros((number_of_lockdowns, 2))
+
+    for i in range(0, number_of_lockdowns):
+        start, end, = list(map(str, content[int(i) + 1].strip().split()))
+        start = float(start)
+        end = float(end)
+        lock_down_start_end[i][0] = start
+        lock_down_start_end[i][1] = end
+
+    return lock_down_start_end
+
+
+def read_dataset(path):
+    data = pd.read_csv(filepath_or_buffer=path, header=None)
+    S = data[0].values
+    E = data[1].values
+    I = data[2].values
+    R = data[3].values
+    time = data[4].values
+    return S, E, I, R, time
+
+
+def get_data_during_lockdown(path, lockdown_times, lockdown_number):
+    S, E, I, R, time = read_dataset(path)
+    start_index = np.argmax(time > lockdown_times[lockdown_number][0])
+    end_index = np.argmax(time > lockdown_times[lockdown_number][1])
+    return S[start_index:end_index], E[start_index:end_index], I[start_index:end_index], R[start_index:end_index], time[
+                                                                                                                   start_index:end_index]
+
+
+# read the dataset
 
 
 def laplace_transform_infectious_profile(r, nh, betaG, transition_matrix, id_to_states, states_to_id, result=0):

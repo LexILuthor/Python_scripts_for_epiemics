@@ -6,7 +6,7 @@ import myFunctions as myFun
 
 def plot_my_graph(algorithm, tot_simulations):
     path = myFun.get_path_of(algorithm)
-
+    line_width = 0.2
     # plot
     color_susceptible = '#2E64FE'
     color_exposed = '#555555'
@@ -22,17 +22,12 @@ def plot_my_graph(algorithm, tot_simulations):
     ax.set_xlim([0, 250])
 
     # read the dataset
-    data = pd.read_csv(filepath_or_buffer=path + "0.csv", header=None)
-    S = data[0].values
-    E = data[1].values
-    I = data[2].values
-    R = data[3].values
-    time = data[4].values
+    S, E, I, R, time = myFun.read_dataset(path + "0.csv")
 
-    ax.plot(time, S, color=color_susceptible, linestyle='-', linewidth=0.2, label='Susceptible')
-    ax.plot(time, E, color=color_exposed, linestyle='-', linewidth=0.2, label='Exposed')
-    ax.plot(time, I, color=color_infected, linestyle='-', linewidth=0.2, label='Infected')
-    ax.plot(time, R, color=color_recovered, linestyle='-', linewidth=0.2, label='Recovered')
+    ax.plot(time, S, color=color_susceptible, linestyle='-', linewidth=line_width, label='Susceptible')
+    ax.plot(time, E, color=color_exposed, linestyle='-', linewidth=line_width, label='Exposed')
+    ax.plot(time, I, color=color_infected, linestyle='-', linewidth=line_width, label='Infected')
+    ax.plot(time, R, color=color_recovered, linestyle='-', linewidth=line_width, label='Recovered')
 
     ax.set_xlabel('time')
     ax.set_title(algorithm)
@@ -40,12 +35,69 @@ def plot_my_graph(algorithm, tot_simulations):
 
     for i in range(1, tot_simulations):
         data = pd.read_csv(filepath_or_buffer=path + str(i) + ".csv", header=None)
-        myFun.plot_dataset(data, ax, color_susceptible, color_exposed, color_infected, color_recovered)
+        myFun.plot_dataset(data, ax, color_susceptible, color_exposed, color_infected, color_recovered, line_width)
         data = None
-        # fig.show()
+        fig.show()
         if i % 8 == 0:
             gc.collect()
         print(i)
 
     fig.savefig("graph_of_" + algorithm + ".png")
+    fig.show()
+
+
+def plot_lock_down(tot_simulations):
+    path = myFun.get_path_of("gillespie_household_lockdown")
+    line_width = 0.2
+
+    # plot
+    color_susceptible = '#2E64FE'
+    color_exposed = '#555555'
+    color_infected = '#FF4000'
+    color_recovered = '#04B431'
+
+    # plot style
+    # plt.xkcd()
+    # plt.style.use("ggplot")
+    plt.tight_layout()
+
+    fig, ax = plt.subplots()
+    ax.set_xlim([40, 100])
+
+    # read the lock_down times
+    lockdown_times = myFun.read_lockdown_times(path, iteration=0)
+    S, E, I, R, time = myFun.get_data_during_lockdown(path + "0.csv", lockdown_times, lockdown_number=0)
+    ax.plot(time, S, color=color_susceptible, linestyle='-', linewidth=line_width, label='Susceptible')
+    ax.plot(time, E, color=color_exposed, linestyle='-', linewidth=line_width, label='Exposed')
+    ax.plot(time, I, color=color_infected, linestyle='-', linewidth=line_width, label='Infected')
+    ax.plot(time, R, color=color_recovered, linestyle='-', linewidth=line_width, label='Recovered')
+
+    for i in range(1, len(lockdown_times)):
+        S, E, I, R, time = myFun.get_data_during_lockdown(path + "0.csv", lockdown_times, lockdown_number=i)
+        ax.plot(time, S, color=color_susceptible, linestyle='-', linewidth=line_width)
+        ax.plot(time, E, color=color_exposed, linestyle='-', linewidth=line_width)
+        ax.plot(time, I, color=color_infected, linestyle='-', linewidth=line_width)
+        ax.plot(time, R, color=color_recovered, linestyle='-', linewidth=line_width)
+
+    ax.set_xlabel('time')
+    ax.set_title("epidemic during lockdown")
+    ax.legend()
+
+    for j in range(1, tot_simulations):
+        print(j)
+        St, Et, It, Rt, timet = myFun.read_dataset(path + str(j) + ".csv")
+        if Rt[-1] < St[0] / 2:
+            continue
+        lockdown_times = myFun.read_lockdown_times(path, iteration=j)
+        for i in range(0, len(lockdown_times)):
+            S, E, I, R, time = myFun.get_data_during_lockdown(path + str(j) + ".csv", lockdown_times, lockdown_number=i)
+            ax.plot(time, S, color=color_susceptible, linestyle='-', linewidth=line_width)
+            ax.plot(time, E, color=color_exposed, linestyle='-', linewidth=line_width)
+            ax.plot(time, I, color=color_infected, linestyle='-', linewidth=line_width)
+            ax.plot(time, R, color=color_recovered, linestyle='-', linewidth=line_width)
+        fig.show()
+
+    path = path + str(0) + "lock_down_time" + ".txt"
+
+    fig.savefig("graph_of_epidemic_during_lockdown.png")
     fig.show()
