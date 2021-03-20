@@ -5,6 +5,7 @@ import numpy as np
 from scipy.optimize import curve_fit
 
 import myFunctions as myFun
+import r_star as r
 
 
 def analyze_my_data(algorithm, tot_simulations):
@@ -75,3 +76,20 @@ def logistic_regression(algorithm, tot_simulations):
     fig.show()
 
     return parameters.mean()
+
+
+def S_infinity_in_relation_to_1_over_R_zero(tot_simulations, algorithm, nh, betaG, betaH, gamma, nu,
+                                            number_of_households):
+    R_0 = r.R_0_Household(nh, betaG, betaH, gamma, nu)
+    path = myFun.get_path_of(algorithm)
+    S_infinity = []
+    for i in range(0, tot_simulations):
+        data = pd.read_csv(filepath_or_buffer=path + str(i) + ".csv", header=None)
+        S = data[0].values
+        if S[-1] < S[0] / 2:
+            # normalize the total population to 1
+            S_infinity.append(S[-1] / (nh * number_of_households))
+    S_infinity = np.array(S_infinity)
+    print("For the " + algorithm + " algorithm we have that (normalized) S_infinity is:\n")
+    print("S_infinity= " + str(S_infinity.mean()) + " (variance = " + str(S_infinity.var()) + ")\n")
+    print("while 1/R0 is: " + str(1 / R_0) + "\n")

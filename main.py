@@ -8,7 +8,7 @@ import plot_graph as myplot
 import r_star as r
 
 # parameters
-
+number_of_households = 20000000
 nh = 3
 betaG = 1.136
 # betaG during lockdown =0.216
@@ -22,7 +22,7 @@ tot_simulations = 2
 # functions:
 
 
-algorithm = "gillespie_household_lockdown"
+algorithm = "gillespie_household_lockdown_new_beta"
 
 # outputR = open("results_on_various_r.txt", "w")
 
@@ -74,7 +74,7 @@ algorithm = "gillespie_household_lockdown"
 
 # plot the gaphs of the simulations
 
-# myplot.plot_my_graph(algorithm, tot_simulations)
+myplot.plot_my_graph(algorithm, tot_simulations)
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -84,6 +84,18 @@ algorithm = "gillespie_household_lockdown"
 # plot the gaphs only during lock-down (algorithm is always gillespie_household_lockdown)
 
 # myplot.plot_lock_down(tot_simulations)
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+# print the value of 1/R0 and S_infinity
+# note, R_0 is computed following the household formula using the function "R_0_Household(nh, betaG, betaH, gamma, nu)"
+
+# !results wrong!
+
+#ad.S_infinity_in_relation_to_1_over_R_zero(tot_simulations, algorithm, nh, betaG, betaH, gamma, nu, number_of_households)
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -108,12 +120,24 @@ algorithm = "gillespie_household_lockdown"
 
 # call the function
 
-# growth_rate_r = r.compute_growth_rate_r(nh, betaG, betaH, nu, gamma, 0, 10, initial_infected=1)
-# print("Growth rate r computed following Pellis_markov: " + str(growth_rate_r))
+growth_rate_r = r.compute_growth_rate_r(nh, betaG, betaH, nu, gamma, 0, 10, initial_infected=1)
+print("Growth rate r computed following Pellis_markov: " + str(growth_rate_r))
 # outputR.write("Growth rate computed following Pellis_markov: " + str(growth_rate_r))
 
 # ----------------------------------------------------------------------------------------------------------------------
 
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+# compute a new betaG given r and a new nh
+# first compute r for the model with the usual parameters
+#growth_rate_r = r.compute_growth_rate_r(nh, betaG, betaH, nu, gamma, a=0, b=10, initial_infected=1)
+#new_nh = 21
+#new_betaG = r.betaG_given_r(new_nh, growth_rate_r, betaG, betaH, nu, gamma, initial_infected=1)
+#print("new betaG " + str(new_betaG))
 
 # ----------------------------------------------------------------------------------------------------------------------
 

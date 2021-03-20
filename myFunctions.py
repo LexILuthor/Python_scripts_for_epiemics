@@ -38,15 +38,17 @@ def mu(nh, a, s, k, betaH, gamma, nu):
 
 
 def get_path_of(algorithm):
-    if (algorithm.lower() == "gillespie_household"):
+    if algorithm.lower() == "gillespie_household_lockdown_new_beta":
+        return "../Gillespie_for_Households/InputOutput/gillespie_Household_new_beta__lockdown"
+    if algorithm.lower() == "gillespie_household":
         return "../Gillespie_for_Households/InputOutput/gillespie_Household"
-    if (algorithm.lower() == "test"):
+    if algorithm.lower() == "test":
         return "test"
-    if (algorithm.lower() == "gillespie_household_lockdown"):
+    if algorithm.lower() == "gillespie_household_lockdown":
         return "../Gillespie_for_Households/InputOutput/gillespie_Household_lockdown"
-    if (algorithm.lower() == "gillespie"):
+    if algorithm.lower() == "gillespie":
         return "../Gillespie_algorithm/OutputFIle/gillespie"
-    if (algorithm.lower() == "sellke"):
+    if algorithm.lower() == "sellke":
         return "../Sellke/OutputFile/sellke"
     print(
         "error, the possibie choice are: gillespie, sellke, gillespie_household, gillespie_household_lockdown, test")
@@ -226,6 +228,7 @@ def get_data_during_lockdown(path, lockdown_times, lockdown_number):
 
 def laplace_transform_infectious_profile(r, nh, betaG, transition_matrix, id_to_states, states_to_id, result=0):
     slimmed_transition_matrix, absorbing_states = slim_transition_matrix(nh, transition_matrix, states_to_id)
+    # slimmed_transition_matrix, absorbing_states, slim_id_to_states, slim_states_to_id = slim_transition_matrix2(nh,                                                                                                                transition_matrix,                                                                                                                id_to_states,                                                                                                                states_to_id)
     number_of_states = len(transition_matrix[0])
 
     matrix = slimmed_transition_matrix - (r * np.identity(number_of_states - nh))
@@ -233,7 +236,7 @@ def laplace_transform_infectious_profile(r, nh, betaG, transition_matrix, id_to_
 
     ik = 0
     for i in range(number_of_states - nh):
-        if ik in absorbing_states:
+        while ik in absorbing_states:
             ik = ik + 1
         result = result + betaG * id_to_states[ik][2] * (-Q_HI[1][i])
         ik = ik + 1
@@ -252,13 +255,13 @@ def slim_transition_matrix(nh, transition_matrix, states_to_id):
     row_o = 0
     column_o = 0
     while row_s < (number_of_states - nh):
-        if row_o in absorbing_states:
+        while row_o in absorbing_states:
             row_o = row_o + 1
         column_s = 0
         column_o = 0
 
         while column_s < (number_of_states - nh):
-            if column_o in absorbing_states:
+            while column_o in absorbing_states:
                 column_o = column_o + 1
             slimmed_transition_matrix[row_s][column_s] = transition_matrix[row_o][column_o]
             column_s = column_s + 1
@@ -318,3 +321,40 @@ def transfer_probability(beta, nu, gamma, from_S, from_E, from_I, to_S, to_E, to
 
 def set_to_none(data):
     data = None
+
+
+def slim_transition_matrix2(nh, transition_matrix, id_to_states, states_to_id):
+    number_of_states = len(transition_matrix[0])
+    slimmed_transition_matrix = np.zeros((number_of_states - nh, number_of_states - nh))
+    absorbing_states = [None]
+    slim_id_to_states = {}
+    slim_states_to_id = {}
+    for i in range(nh):
+        absorbing_states.append(states_to_id[(int(i), 0, 0)])
+
+    row_s = 0
+    column_s = 0
+    row_o = 0
+    column_o = 0
+
+    while row_s < (number_of_states - nh):
+        while row_o in absorbing_states:
+            row_o = row_o + 1
+
+        state = id_to_states[row_o]
+        slim_states_to_id[state] = row_s
+        slim_id_to_states[row_s] = state
+
+        column_s = 0
+        column_o = 0
+
+        while column_s < (number_of_states - nh):
+            while column_o in absorbing_states:
+                column_o = column_o + 1
+            slimmed_transition_matrix[row_s][column_s] = transition_matrix[row_o][column_o]
+            column_s = column_s + 1
+            column_o = column_o + 1
+        row_s = row_s + 1
+        row_o = row_o + 1
+
+    return slimmed_transition_matrix, absorbing_states, slim_id_to_states, slim_states_to_id
