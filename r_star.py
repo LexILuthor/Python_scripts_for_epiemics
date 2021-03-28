@@ -1,7 +1,8 @@
-import myFunctions as myFun
-import analyze_data as ad
-from scipy.optimize import brentq
 import numpy as np
+from scipy.optimize import brentq
+
+import analyze_data as ad
+import myFunctions as myFun
 
 
 def Rstar(nh, betaG, betaH, gamma, nu):
@@ -13,25 +14,16 @@ def Rstar(nh, betaG, betaH, gamma, nu):
 
 
 def betaG_given_r(nh, r, betaG, betaH, nu, gamma, initial_infected=1):
-    transition_matrix, states_to_id, id_to_states = myFun.get_continuous_transition_matrix(nh, betaH, nu, gamma,
-                                                                                           initial_infected)
-    # subtract to the diagonal of the matrix i_k (the matrix delta in the article)
-    for i in range(len(transition_matrix[0])):
-        current_state = id_to_states[i]
-        transition_matrix[i][i] = transition_matrix[i][i] - gamma * current_state[2]
-    slimmed_transition_matrix, absorbing_states = myFun.slim_transition_matrix(nh, transition_matrix, states_to_id)
-    number_of_states = len(transition_matrix[0])
+    QH, states_to_id, id_to_states = myFun.get_QH(nh, betaH, nu, gamma, initial_infected)
 
-    matrix = slimmed_transition_matrix - (r * np.identity(number_of_states - nh))
+    number_of_states = len(QH[0])
+
+    matrix = QH - (r * np.identity(number_of_states - nh))
     Q_HI = np.linalg.inv(matrix)
 
-    ik = 0
     result = 0
     for i in range(number_of_states - nh):
-        while ik in absorbing_states:
-            ik = ik + 1
-        result = result + id_to_states[ik][2] * (-Q_HI[1][i])
-        ik = ik + 1
+        result = result + id_to_states[i][2] * (-Q_HI[1][i])
     return 1 / result
 
 
@@ -47,36 +39,21 @@ def R0_from_r(algorithm, tot_simulations, nu, gamma):
 
 
 def compute_growth_rate_r(nh, betaG, betaH, nu, gamma, a, b, initial_infected=1):
-    transition_matrix, states_to_id, id_to_states = myFun.get_continuous_transition_matrix(nh, betaH, nu, gamma,
-                                                                                           initial_infected)
-    # subtract to the diagonal of the matrix i_k (the matrix delta in the article)
-    for i in range(len(transition_matrix[0])):
-        current_state = id_to_states[i]
-        transition_matrix[i][i] = transition_matrix[i][i] - gamma * current_state[2]
+    QH, states_to_id, id_to_states = myFun.get_QH(nh, betaH, nu, gamma, initial_infected)
 
     # find the solution of the laplace transform
     root = brentq(myFun.laplace_transform_infectious_profile, a, b,
-                  (nh, betaG, transition_matrix, id_to_states, states_to_id, -1))
+                  args=(nh, betaG, QH, states_to_id, id_to_states, -1))
     return root
 
 
 def compute_Rstar(nh, betaG, betaH, nu, gamma, initial_infected=1):
-    transition_matrix, states_to_id, id_to_states = myFun.get_continuous_transition_matrix(nh, betaH, nu, gamma,
-                                                                                           initial_infected)
-    # subtract to the diagonal of the matrix i_k (the matix delta in the article)
-    for i in range(len(transition_matrix[0])):
-        current_state = id_to_states[i]
-        transition_matrix[i][i] = transition_matrix[i][i] - gamma * current_state[2]
+    transition_matrix, states_to_id, id_to_states = myFun.get_QH(nh, betaH, nu, gamma, initial_infected)
 
-    slimmed_transition_matrix, absorbing_states = myFun.slim_transition_matrix(nh, transition_matrix, states_to_id)
     number_of_states = len(transition_matrix[0])
-    Q_1 = np.linalg.inv(slimmed_transition_matrix)
+    Q_1 = np.linalg.inv(transition_matrix)
 
-    ik = 0
     Rstar = 0
-    for i in range(number_of_states - nh):
-        while ik in absorbing_states:
-            ik = ik + 1
-        Rstar = Rstar + (- Q_1[1][i]) * id_to_states[ik][2]
-        ik = ik + 1
+    for i in range(number_of_states):
+        Rstar = Rstar + (- Q_1[1][i]) * id_to_states[i][2]
     return betaG * Rstar

@@ -16,13 +16,13 @@ betaH = 2.27
 gamma = 0.45
 nu = 0.21
 
-tot_simulations = 2
+tot_simulations = 40
 
 # available
 # functions:
 
 
-algorithm = "gillespie_household_lockdown_new_beta"
+algorithm = "gillespie_household"
 
 # outputR = open("results_on_various_r.txt", "w")
 
@@ -74,7 +74,7 @@ algorithm = "gillespie_household_lockdown_new_beta"
 
 # plot the gaphs of the simulations
 
-myplot.plot_my_graph(algorithm, tot_simulations)
+# myplot.plot_my_graph(algorithm, tot_simulations,log_scale=True)
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -83,7 +83,7 @@ myplot.plot_my_graph(algorithm, tot_simulations)
 
 # plot the gaphs only during lock-down (algorithm is always gillespie_household_lockdown)
 
-# myplot.plot_lock_down(tot_simulations)
+#myplot.plot_lock_down(tot_simulations,log_scale=True)
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -120,7 +120,7 @@ myplot.plot_my_graph(algorithm, tot_simulations)
 
 # call the function
 
-growth_rate_r = r.compute_growth_rate_r(nh, betaG, betaH, nu, gamma, 0, 10, initial_infected=1)
+growth_rate_r = r.compute_growth_rate_r(nh, betaG, betaH, nu, gamma, 0, 3, initial_infected=1)
 print("Growth rate r computed following Pellis_markov: " + str(growth_rate_r))
 # outputR.write("Growth rate computed following Pellis_markov: " + str(growth_rate_r))
 

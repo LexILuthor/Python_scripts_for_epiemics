@@ -1,10 +1,8 @@
-from math import comb
-import numpy as np
-import matplotlib.pyplot as plt
 import math
-import pandas as pd
+from math import comb
 
-import r_star as r
+import numpy as np
+import pandas as pd
 
 
 def q(nh, k, betaH, gamma):
@@ -55,15 +53,17 @@ def get_path_of(algorithm):
     exit()
 
 
-def plot_dataset(data, ax, color_susceptible, color_exposed, color_infected, color_recovered, line_width=0.2):
+def plot_dataset(data, ax, color_susceptible, color_exposed, color_infected, color_recovered, line_width=0.2,
+                 log_scale=False):
     S = data[0].values
     E = data[1].values
     I = data[2].values
     R = data[3].values
     time = data[4].values
 
-    ax.plot(time, S, color=color_susceptible, linewidth=line_width, linestyle='-')
-    ax.plot(time, R, color=color_recovered, linewidth=line_width, linestyle='-')
+    if not log_scale:
+        ax.plot(time, S, color=color_susceptible, linewidth=line_width, linestyle='-')
+        ax.plot(time, R, color=color_recovered, linewidth=line_width, linestyle='-')
     ax.plot(time, E, color=color_exposed, linewidth=line_width, linestyle='-')
     ax.plot(time, I, color=color_infected, linewidth=line_width, linestyle='-')
 
@@ -100,7 +100,62 @@ def g_nh(x, nh, betaG, betaH, gamma, nu):
     return 1 - summation
 
 
-def initialize_row_of_transition_matrix(id_starting_state, transition_matrix, id_to_states, states_to_id, beta, nu,
+
+
+
+def read_lockdown_times(path, iteration=0):
+    path = path + str(iteration) + "lock_down_time" + ".txt"
+    with open(path) as f:
+        content = f.readlines()
+
+    number_of_lockdowns = int(list(map(int, content[0].strip().split()))[0])
+
+    lock_down_start_end = np.zeros((number_of_lockdowns, 2))
+
+    for i in range(0, number_of_lockdowns):
+        start, end, = list(map(str, content[int(i) + 1].strip().split()))
+        start = float(start)
+        end = float(end)
+        lock_down_start_end[i][0] = start
+        lock_down_start_end[i][1] = end
+
+    return lock_down_start_end
+
+
+def read_dataset(path):
+    data = pd.read_csv(filepath_or_buffer=path, header=None)
+    S = data[0].values
+    E = data[1].values
+    I = data[2].values
+    R = data[3].values
+    time = data[4].values
+    return S, E, I, R, time
+
+
+def get_data_during_lockdown(path, lockdown_times, lockdown_number):
+    S, E, I, R, time = read_dataset(path)
+    start_index = np.argmax(time > lockdown_times[lockdown_number][0])
+    end_index = np.argmax(time > lockdown_times[lockdown_number][1])
+    return S[start_index:end_index], E[start_index:end_index], I[start_index:end_index], R[start_index:end_index], time[
+                                                                                                                   start_index:end_index]
+
+
+# read the dataset
+
+
+def laplace_transform_infectious_profile(r, nh, betaG, QH, states_to_id, id_to_states, result=0):
+    number_of_states = len(QH[0])
+
+    matrix = QH - (r * np.identity(number_of_states))
+    Q_HI = np.linalg.inv(matrix)
+    for i in range(number_of_states):
+        result = result + betaG * id_to_states[i][2] * (-Q_HI[1][i])
+    return result
+
+
+
+
+def initialize_row_of_transition_matrix(id_starting_state, transition_matrix, states_to_id, id_to_states, beta, nu,
                                         gamma, nh):
     S, E, I = id_to_states[id_starting_state]
     new_exposed_probability = transfer_probability(beta, nu, gamma, S, E, I, S - 1, E + 1, I, nh)
@@ -127,7 +182,7 @@ def initialize_row_of_transition_matrix(id_starting_state, transition_matrix, id
             transition_matrix[id_starting_state][arrival_state] = new_recovered_probability
 
 
-def initialize_row_of_transition_matrix_not_normalized(id_starting_state, transition_matrix, id_to_states, states_to_id,
+def initialize_row_of_transition_matrix_not_normalized(id_starting_state, transition_matrix, states_to_id, id_to_states,
                                                        beta, nu,
                                                        gamma, nh):
     S, E, I = id_to_states[id_starting_state]
@@ -181,95 +236,11 @@ def get_discrete_transition_matrix(nh, beta, nu, gamma, initial_infected=1):
     transition_matrix = np.zeros((number_of_states, number_of_states))
 
     # function in substitution to the map function
-    [initialize_row_of_transition_matrix(x, transition_matrix, id_to_states, states_to_id, beta, nu,
+    [initialize_row_of_transition_matrix(x, transition_matrix, states_to_id, id_to_states, beta, nu,
                                          gamma, nh) for x in id_to_states]
     return transition_matrix, states_to_id, id_to_states
 
 
-def read_lockdown_times(path, iteration=0):
-    path = path + str(iteration) + "lock_down_time" + ".txt"
-    with open(path) as f:
-        content = f.readlines()
-
-    number_of_lockdowns = int(list(map(int, content[0].strip().split()))[0])
-
-    lock_down_start_end = np.zeros((number_of_lockdowns, 2))
-
-    for i in range(0, number_of_lockdowns):
-        start, end, = list(map(str, content[int(i) + 1].strip().split()))
-        start = float(start)
-        end = float(end)
-        lock_down_start_end[i][0] = start
-        lock_down_start_end[i][1] = end
-
-    return lock_down_start_end
-
-
-def read_dataset(path):
-    data = pd.read_csv(filepath_or_buffer=path, header=None)
-    S = data[0].values
-    E = data[1].values
-    I = data[2].values
-    R = data[3].values
-    time = data[4].values
-    return S, E, I, R, time
-
-
-def get_data_during_lockdown(path, lockdown_times, lockdown_number):
-    S, E, I, R, time = read_dataset(path)
-    start_index = np.argmax(time > lockdown_times[lockdown_number][0])
-    end_index = np.argmax(time > lockdown_times[lockdown_number][1])
-    return S[start_index:end_index], E[start_index:end_index], I[start_index:end_index], R[start_index:end_index], time[
-                                                                                                                   start_index:end_index]
-
-
-# read the dataset
-
-
-def laplace_transform_infectious_profile(r, nh, betaG, transition_matrix, id_to_states, states_to_id, result=0):
-    slimmed_transition_matrix, absorbing_states = slim_transition_matrix(nh, transition_matrix, states_to_id)
-    # slimmed_transition_matrix, absorbing_states, slim_id_to_states, slim_states_to_id = slim_transition_matrix2(nh,                                                                                                                transition_matrix,                                                                                                                id_to_states,                                                                                                                states_to_id)
-    number_of_states = len(transition_matrix[0])
-
-    matrix = slimmed_transition_matrix - (r * np.identity(number_of_states - nh))
-    Q_HI = np.linalg.inv(matrix)
-
-    ik = 0
-    for i in range(number_of_states - nh):
-        while ik in absorbing_states:
-            ik = ik + 1
-        result = result + betaG * id_to_states[ik][2] * (-Q_HI[1][i])
-        ik = ik + 1
-    return result
-
-
-def slim_transition_matrix(nh, transition_matrix, states_to_id):
-    number_of_states = len(transition_matrix[0])
-    slimmed_transition_matrix = np.zeros((number_of_states - nh, number_of_states - nh))
-    absorbing_states = [None]
-    for i in range(nh):
-        absorbing_states.append(states_to_id[(int(i), 0, 0)])
-
-    row_s = 0
-    column_s = 0
-    row_o = 0
-    column_o = 0
-    while row_s < (number_of_states - nh):
-        while row_o in absorbing_states:
-            row_o = row_o + 1
-        column_s = 0
-        column_o = 0
-
-        while column_s < (number_of_states - nh):
-            while column_o in absorbing_states:
-                column_o = column_o + 1
-            slimmed_transition_matrix[row_s][column_s] = transition_matrix[row_o][column_o]
-            column_s = column_s + 1
-            column_o = column_o + 1
-        row_s = row_s + 1
-        row_o = row_o + 1
-
-    return slimmed_transition_matrix, absorbing_states
 
 
 def get_continuous_transition_matrix(nh, beta, nu, gamma, initial_infected=1):
@@ -277,7 +248,7 @@ def get_continuous_transition_matrix(nh, beta, nu, gamma, initial_infected=1):
     transition_matrix = np.zeros((number_of_states, number_of_states))
 
     # function in substitution to the map function
-    [initialize_row_of_transition_matrix_not_normalized(x, transition_matrix, id_to_states, states_to_id, beta, nu,
+    [initialize_row_of_transition_matrix_not_normalized(x, transition_matrix, states_to_id, id_to_states, beta, nu,
                                                         gamma, nh) for x in id_to_states]
 
     # The following is to put on the diagonal the -(sum) of the row
@@ -286,6 +257,16 @@ def get_continuous_transition_matrix(nh, beta, nu, gamma, initial_infected=1):
         transition_matrix[i][i] = -sum(transition_matrix[i])
 
     return transition_matrix, states_to_id, id_to_states
+
+
+def get_QH(nh, beta, nu, gamma, initial_infected=1):
+    transition_matrix, states_to_id, id_to_states = get_continuous_transition_matrix(nh, beta, nu, gamma,
+                                                                                     initial_infected=initial_infected)
+
+    slimmed_transition_matrix, slim_states_to_id, slim_id_to_states = slim_transition_matrix(nh, transition_matrix,
+                                                                                             states_to_id,
+                                                                                             id_to_states)
+    return slimmed_transition_matrix, slim_states_to_id, slim_id_to_states
 
 
 def compute_q_using_transition_matrix(nh, betaH, gamma, nu):
@@ -323,7 +304,7 @@ def set_to_none(data):
     data = None
 
 
-def slim_transition_matrix2(nh, transition_matrix, id_to_states, states_to_id):
+def slim_transition_matrix(nh, transition_matrix, states_to_id, id_to_states):
     number_of_states = len(transition_matrix[0])
     slimmed_transition_matrix = np.zeros((number_of_states - nh, number_of_states - nh))
     absorbing_states = [None]
@@ -357,4 +338,4 @@ def slim_transition_matrix2(nh, transition_matrix, id_to_states, states_to_id):
         row_s = row_s + 1
         row_o = row_o + 1
 
-    return slimmed_transition_matrix, absorbing_states, slim_id_to_states, slim_states_to_id
+    return slimmed_transition_matrix, slim_states_to_id, slim_id_to_states
