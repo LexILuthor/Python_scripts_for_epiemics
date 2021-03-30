@@ -1,8 +1,9 @@
-from numpy import ndarray
 import matplotlib.pyplot as plt
-import pandas as pd
 import numpy as np
+import pandas as pd
+from numpy import ndarray
 from scipy.optimize import curve_fit
+from sklearn.linear_model import LinearRegression
 
 import myFunctions as myFun
 import r_star as r
@@ -34,6 +35,70 @@ def analyze_my_data(algorithm, tot_simulations):
                          np.array(total_infected), major_outbreak, np.array(S_infinity_time))
 
 
+def exponential_regression(algorithm, tot_simulations):
+    time_interval = (23, 45)
+
+    path = myFun.get_path_of(algorithm)
+    # plot style
+    # plt.xkcd()
+    plt.style.use("ggplot")
+    plt.tight_layout()
+    fig, ax = plt.subplots()
+    ax.set_yscale('log')
+
+    parameters = np.zeros(tot_simulations)
+
+    data = pd.read_csv(filepath_or_buffer=path + str(0) + ".csv", header=None)
+    I = data[2].values
+    R = data[3].values
+    time = data[4].values
+    indexes = np.argwhere(time_interval[0] < time)
+    start_index = indexes.min()
+    indexes = np.argwhere(time < time_interval[1])
+    end_index = indexes.max()
+
+    reg = LinearRegression()
+    x = time[start_index:end_index + 1].reshape(-1, 1)
+    reg.fit(x, np.log(I[start_index:end_index + 1]))
+    y_pred = reg.predict(x)
+    parameters[0] = reg.coef_[0]
+
+    ax.plot(time[start_index:end_index + 1], I[start_index:end_index + 1], linestyle='-', linewidth=0.2,
+            color='#FF4000', label='data')
+    ax.plot(time[start_index:end_index + 1], np.exp(y_pred), linestyle='-', linewidth=0.2, color='#2E64FE',
+            label='estimation')
+
+    ax.set_xlabel('time')
+    ax.legend()
+
+    for i in range(1, tot_simulations):
+        data = pd.read_csv(filepath_or_buffer=path + str(i) + ".csv", header=None)
+        S = data[0].values
+        I = data[2].values
+        R = data[3].values
+        time = data[4].values
+        if R[-1] < S[0] / 2:
+            continue
+
+        indexes = np.argwhere(time_interval[0] < time)
+        start_index = indexes.min()
+        indexes = np.argwhere(time < time_interval[1])
+        end_index = indexes.max()
+
+        reg = LinearRegression()
+
+        x = time[start_index:end_index + 1].reshape(-1, 1)
+        reg.fit(x, np.log(I[start_index:end_index + 1]))
+        y_pred = reg.predict(x)
+        parameters[i] = reg.coef_[0]
+
+        myFun.print_estimation(time[start_index:end_index + 1], I[start_index:end_index + 1], np.exp(y_pred), ax)
+
+        fig.show()
+
+    return parameters.mean()
+
+
 def logistic_regression(algorithm, tot_simulations):
     path = myFun.get_path_of(algorithm)
 
@@ -42,6 +107,8 @@ def logistic_regression(algorithm, tot_simulations):
     plt.style.use("ggplot")
     plt.tight_layout()
     fig, ax = plt.subplots()
+
+    plt.title(label="estimation of r using Recovered")
 
     data = pd.read_csv(filepath_or_buffer=path + str(0) + ".csv", header=None)
     I = data[2].values
@@ -71,7 +138,8 @@ def logistic_regression(algorithm, tot_simulations):
         tmp_parameters, covariance = curve_fit(myFun.logistic_function, time, R, p0=(0.3, R[-1]),
                                                bounds=([0, R[-1] - (R[-1] * 0.0005)], np.inf), method='trf')
         parameters[i] = tmp_parameters[0]
-        myFun.print_simulation(time, R, ax, tmp_parameters)
+        estimation = myFun.logistic_function(time, *tmp_parameters)
+        myFun.print_estimation(time, R, estimation, ax)
 
     fig.show()
 

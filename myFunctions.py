@@ -1,5 +1,5 @@
 import math
-from math import comb
+from functools import cache
 
 import numpy as np
 import pandas as pd
@@ -9,29 +9,39 @@ def q(nh, k, betaH, gamma):
     return gamma / (gamma + k * betaH)
 
 
-def p(nh, a, m, s, betaH, gamma, nu):
-    summation = 0
-    q_from_matrix = compute_q_using_transition_matrix(nh, betaH, gamma, nu)
-    for k in range(m, s):
-        # two options
-        # here we use the exact same formula as Pellis to compute q(k)
-        # summation = summation + pow(-1, k - m) * comb(s - m, k - m) * pow(q(nh, k, betaH, gamma), a)
-        # here we use the transition matrix
-        summation = summation + pow(-1, k - m) * comb(s - m, k - m) * pow(q_from_matrix[k], a)
-    return comb(a, m) * summation
+def p(a, s, m, nh, betaH, gamma, nu):
+    transition_matrix, states_to_id, id_to_states = get_discrete_transition_matrix(nh, betaH, nu, gamma, 1)
+    id_target_state = np.zeros(nh, dtype=int)
+    for m in range(s + 1):
+        id_target_state[m] = int(states_to_id[(m, 0, 0)])
+
+    old_distribution = np.zeros(len(transition_matrix[0, :]))
+    current_distribution = np.zeros(len(transition_matrix[0, :]))
+
+    id_initial_state = states_to_id[(s, a, 0)]
+    current_distribution[id_initial_state] = 1
+
+    while not ((old_distribution == current_distribution).all()):
+        old_distribution = current_distribution
+        current_distribution = np.matmul(old_distribution, transition_matrix)
+
+    p = np.zeros(nh)
+    for k in range(nh):
+        p[k] = current_distribution[id_target_state[k]]
+    return p[m]
 
 
 def mu(nh, a, s, k, betaH, gamma, nu):
-    if (s == 0):
+    if s == 0:
         return 0
-    if (k > s):
+    if k > s:
         print("Error k>s!")
-    if (k == 0):
+    if k == 0:
         return a
 
     summation = 0
     for i in range(1, s - k + 1):
-        summation = p(nh, a, s - i, s, betaH, gamma, nu) * mu(nh, i, s - i, k - 1, betaH, gamma, nu)
+        summation = p(a, s - i, s, nh, betaH, gamma, nu) * mu(nh, i, s - i, k - 1, betaH, gamma, nu)
     return summation
 
 
@@ -88,9 +98,9 @@ def logistic_function(t, r, k, c0=1):
     return (k * c0) / (c0 + (k - c0) * np.exp(-r * t))
 
 
-def print_simulation(time, cumulative_cases, ax, parameters):
-    ax.plot(time, cumulative_cases, linestyle='-', color='#FF4000', linewidth=0.2)
-    ax.plot(time, logistic_function(time, *parameters), linestyle='-', color='#2E64FE', linewidth=0.2)
+def print_estimation(time, real_data, estimation, ax):
+    ax.plot(time, real_data, linestyle='-', color='#FF4000', linewidth=0.2)
+    ax.plot(time, estimation, linestyle='-', color='#2E64FE', linewidth=0.2)
 
 
 def g_nh(x, nh, betaG, betaH, gamma, nu):
@@ -98,9 +108,6 @@ def g_nh(x, nh, betaG, betaH, gamma, nu):
     for i in range(nh):
         summation = summation + (betaG / gamma) * mu(nh, 1, nh - 1, int(i), betaH, gamma, nu) / pow(x, int(i) + 1)
     return 1 - summation
-
-
-
 
 
 def read_lockdown_times(path, iteration=0):
@@ -151,8 +158,6 @@ def laplace_transform_infectious_profile(r, nh, betaG, QH, states_to_id, id_to_s
     for i in range(number_of_states):
         result = result + betaG * id_to_states[i][2] * (-Q_HI[1][i])
     return result
-
-
 
 
 def initialize_row_of_transition_matrix(id_starting_state, transition_matrix, states_to_id, id_to_states, beta, nu,
@@ -231,6 +236,7 @@ def states(nh, initial_infected=1):
     return state_to_id, id_to_state, id_counter
 
 
+@cache
 def get_discrete_transition_matrix(nh, beta, nu, gamma, initial_infected=1):
     states_to_id, id_to_states, number_of_states = states(nh, initial_infected)
     transition_matrix = np.zeros((number_of_states, number_of_states))
@@ -241,10 +247,8 @@ def get_discrete_transition_matrix(nh, beta, nu, gamma, initial_infected=1):
     return transition_matrix, states_to_id, id_to_states
 
 
-
-
-def get_continuous_transition_matrix(nh, beta, nu, gamma, initial_infected=1):
-    states_to_id, id_to_states, number_of_states = states(nh, initial_infected)
+def get_continuous_transition_matrix(nh, beta, nu, gamma):
+    states_to_id, id_to_states, number_of_states = states(nh, 1)
     transition_matrix = np.zeros((number_of_states, number_of_states))
 
     # function in substitution to the map function
@@ -260,35 +264,12 @@ def get_continuous_transition_matrix(nh, beta, nu, gamma, initial_infected=1):
 
 
 def get_QH(nh, beta, nu, gamma, initial_infected=1):
-    transition_matrix, states_to_id, id_to_states = get_continuous_transition_matrix(nh, beta, nu, gamma,
-                                                                                     initial_infected=initial_infected)
+    transition_matrix, states_to_id, id_to_states = get_continuous_transition_matrix(nh, beta, nu, gamma)
 
     slimmed_transition_matrix, slim_states_to_id, slim_id_to_states = slim_transition_matrix(nh, transition_matrix,
                                                                                              states_to_id,
                                                                                              id_to_states)
     return slimmed_transition_matrix, slim_states_to_id, slim_id_to_states
-
-
-def compute_q_using_transition_matrix(nh, betaH, gamma, nu):
-    transition_matrix, states_to_id, id_to_states = get_discrete_transition_matrix(nh, betaH, nu, gamma, 1)
-    id_target_state = np.zeros(nh, dtype=int)
-    for k in range(nh):
-        id_target_state[k] = int(states_to_id[(int(k), 0, 0)])
-
-    old_distribution = np.zeros(len(transition_matrix[0, :]))
-    current_distribution = np.zeros(len(transition_matrix[0, :]))
-
-    id_initial_state = states_to_id[(nh - 1, 0, 1)]
-    current_distribution[id_initial_state] = 1
-
-    while not ((old_distribution == current_distribution).all()):
-        old_distribution = current_distribution
-        current_distribution = np.matmul(old_distribution, transition_matrix)
-
-    q = np.zeros(nh)
-    for k in range(nh):
-        q[k] = current_distribution[id_target_state[k]]
-    return q
 
 
 def transfer_probability(beta, nu, gamma, from_S, from_E, from_I, to_S, to_E, to_I, nh):
