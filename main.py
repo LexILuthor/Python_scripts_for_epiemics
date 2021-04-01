@@ -16,13 +16,13 @@ betaH = 2.27
 gamma = 0.45
 nu = 0.21
 
-tot_simulations = 10
+tot_simulations = 5
 
 # available
 # functions:
 
 
-algorithm = "gillespie_household"
+algorithm = "gillespie_household_lockdown"
 
 # outputR = open("results_on_various_r.txt", "w")
 
@@ -54,8 +54,8 @@ algorithm = "gillespie_household"
 
 # dubbio riguardo a mu_G, per ora è calcolato come BetaG/gamma
 # (remember mu_G is the mean number of global contacts fo an individual)
-Rstar = r.Rstar(nh, betaG, betaH, gamma, nu)
-print("R* is: " + str(Rstar) + "\n")
+# Rstar = r.Rstar_following_pellis_2(nh, betaG, betaH, gamma, nu)
+# print("R* is: " + str(Rstar) + "\n")
 # outputR.write("R* is: " + str(Rstar) + "\n")
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -86,7 +86,7 @@ print("R* is: " + str(Rstar) + "\n")
 
 # plot the gaphs of the simulations
 
-# myplot.plot_my_graph(algorithm, tot_simulations,log_scale=True)
+myplot.plot_my_graph(algorithm, tot_simulations,log_scale=False)
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -132,8 +132,8 @@ print("R* is: " + str(Rstar) + "\n")
 
 # call the function
 
-growth_rate_r = r.compute_growth_rate_r(nh, betaG, betaH, nu, gamma, 0, 3, initial_infected=1)
-print("Growth rate r computed following Pellis_markov: " + str(growth_rate_r))
+# growth_rate_r = r.compute_growth_rate_r(nh, betaG, betaH, nu, gamma, 0, 3, initial_infected=1)
+# print("Growth rate r computed following Pellis_markov: " + str(growth_rate_r))
 # outputR.write("Growth rate computed following Pellis_markov: " + str(growth_rate_r))
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -152,8 +152,8 @@ print("Growth rate r computed following Pellis_markov: " + str(growth_rate_r))
 
 # compute R_star following pellis_markov
 
-Rstar = r.compute_Rstar(nh, betaG, betaH, nu, gamma, initial_infected=1)
-print("R_star computed following pellis_markov: " + str(Rstar))
+# Rstar = r.compute_Rstar_following_pellis_markov(nh, betaG, betaH, nu, gamma, initial_infected=1)
+# print("R_star computed following pellis_markov: " + str(Rstar))
 # outputR.write("R_star computed following pellis_r: " + str(Rstar))
 
 # ----------------------------------------------------------------------------------------------------------------------

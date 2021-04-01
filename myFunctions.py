@@ -9,7 +9,7 @@ def q(nh, k, betaH, gamma):
     return gamma / (gamma + k * betaH)
 
 
-def p(a, s, m, nh, betaH, gamma, nu):
+def p(a, m, s, nh, betaH, gamma, nu):
     transition_matrix, states_to_id, id_to_states = get_discrete_transition_matrix(nh, betaH, nu, gamma, 1)
     id_target_state = np.zeros(nh, dtype=int)
     for m in range(s + 1):
@@ -18,15 +18,15 @@ def p(a, s, m, nh, betaH, gamma, nu):
     old_distribution = np.zeros(len(transition_matrix[0, :]))
     current_distribution = np.zeros(len(transition_matrix[0, :]))
 
-    id_initial_state = states_to_id[(s, a, 0)]
+    id_initial_state = states_to_id[(s, 0, a)]
     current_distribution[id_initial_state] = 1
 
     while not ((old_distribution == current_distribution).all()):
         old_distribution = current_distribution
         current_distribution = np.matmul(old_distribution, transition_matrix)
 
-    p = np.zeros(nh)
-    for k in range(nh):
+    p = np.zeros(s + 1)
+    for k in range(s + 1):
         p[k] = current_distribution[id_target_state[k]]
     return p[m]
 

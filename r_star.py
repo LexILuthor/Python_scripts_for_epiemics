@@ -5,7 +5,7 @@ import analyze_data as ad
 import myFunctions as myFun
 
 
-def Rstar(nh, betaG, betaH, gamma, nu):
+def Rstar_following_pellis_2(nh, betaG, betaH, gamma, nu):
     # Go to function p in fiile myFun.py to change the way q(k) is computed (using Pellis method or using trasition matrix)
     summation = 0
     for k in range(0, nh - 1):
@@ -47,12 +47,13 @@ def compute_growth_rate_r(nh, betaG, betaH, nu, gamma, a, b, initial_infected=1)
     return root
 
 
-def compute_Rstar(nh, betaG, betaH, nu, gamma, initial_infected=1):
+def compute_Rstar_following_pellis_markov(nh, betaG, betaH, nu, gamma, initial_infected=1):
     transition_matrix, states_to_id, id_to_states = myFun.get_QH(nh, betaH, nu, gamma, initial_infected)
 
     number_of_states = len(transition_matrix[0])
     Q_1 = np.linalg.inv(transition_matrix)
 
+    # change this into scalar product
     Rstar = 0
     for i in range(number_of_states):
         Rstar = Rstar + (- Q_1[1][i]) * id_to_states[i][2]
