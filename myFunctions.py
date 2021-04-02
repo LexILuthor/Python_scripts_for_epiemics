@@ -15,9 +15,9 @@ def p(nh, a, m, s, betaH, gamma, nu):
     for k in range(m, s):
         # two options
         # here we use the exact same formula as Pellis to compute q(k)
-        # summation = summation + pow(-1, k - m) * comb(s - m, k - m) * pow(q(nh, k, betaH, gamma), a)
+        summation = summation + pow(-1, k - m) * comb(s - m, k - m) * pow(q(nh, k, betaH, gamma), a)
         # here we use the transition matrix
-        summation = summation + pow(-1, k - m) * comb(s - m, k - m) * pow(q_from_matrix[k], a)
+        #summation = summation + pow(-1, k - m) * comb(s - m, k - m) * pow(q_from_matrix[k], a)
     return comb(a, m) * summation
 
 

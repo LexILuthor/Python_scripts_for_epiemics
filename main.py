@@ -42,8 +42,8 @@ algorithm = "gillespie_household"
 
 # dubbio riguardo a mu_G, per ora è calcolato come BetaG/gamma
 # (remember mu_G is the mean number of global contacts fo an individual)
-# Rstar = r.Rstar(nh, betaG, betaH, gamma, nu)
-# print("R* is: " + str(Rstar) + "\n")
+Rstar = r.Rstar(nh, betaG, betaH, gamma, nu)
+print("R* is: " + str(Rstar) + "\n")
 # outputR.write("R* is: " + str(Rstar) + "\n")
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -120,8 +120,8 @@ algorithm = "gillespie_household"
 
 # call the function
 
-growth_rate_r = r.compute_growth_rate_r(nh, betaG, betaH, nu, gamma, 0, 3, initial_infected=1)
-print("Growth rate r computed following Pellis_markov: " + str(growth_rate_r))
+#growth_rate_r = r.compute_growth_rate_r(nh, betaG, betaH, nu, gamma, 0, 3, initial_infected=1)
+#print("Growth rate r computed following Pellis_markov: " + str(growth_rate_r))
 # outputR.write("Growth rate computed following Pellis_markov: " + str(growth_rate_r))
 
 # ----------------------------------------------------------------------------------------------------------------------
