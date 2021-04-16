@@ -19,7 +19,6 @@ def plot_my_graph(algorithm, tot_simulations, log_scale=False):
     plt.tight_layout()
 
     fig, ax = plt.subplots()
-    ax.set_xlim([0, 110])
 
     # read the dataset
     S, E, I, R, time = myFun.read_dataset(path + "0.csv")

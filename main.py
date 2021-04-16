@@ -1,10 +1,3 @@
-import gc  # garbage collector
-import numpy as np
-import matplotlib.pyplot as plt
-import pandas as pd
-import myFunctions as myFun
-import analyze_data as ad
-import plot_graph as myplot
 import r_star as r
 
 # parameters
@@ -16,7 +9,7 @@ betaH = 2.27
 gamma = 0.45
 nu = 0.21
 
-tot_simulations = 5
+tot_simulations = 3
 
 # available
 # functions:
@@ -54,8 +47,8 @@ algorithm = "gillespie_household_lockdown"
 
 # dubbio riguardo a mu_G, per ora è calcolato come BetaG/gamma
 # (remember mu_G is the mean number of global contacts fo an individual)
-# Rstar = r.Rstar_following_pellis_2(nh, betaG, betaH, gamma, nu)
-# print("R* is: " + str(Rstar) + "\n")
+Rstar = r.Rstar_following_pellis_2(nh, betaG, betaH, nu, gamma)
+print("R* following pellis_2: " + str(Rstar) + "\n")
 # outputR.write("R* is: " + str(Rstar) + "\n")
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -66,8 +59,8 @@ algorithm = "gillespie_household_lockdown"
 # R_0 for the model with household computed following Pellis_1 corollary 1
 
 # dubbio riguardo a q(k) vedi quaderno come è stato calcolato
-# R_0_Household = r.R_0_Household(nh, betaG, betaH, gamma, nu)
-# print("R0 Household is: " + str(R_0_Household) + "\n")
+R_0_Household = r.R_0_Household(nh, betaG, betaH, gamma, nu)
+print("R0 Household is: " + str(R_0_Household) + "\n")
 # outputR.write("R0 Household is: " + str(R_0_Household) + "\n")
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -86,7 +79,7 @@ algorithm = "gillespie_household_lockdown"
 
 # plot the gaphs of the simulations
 
-myplot.plot_my_graph(algorithm, tot_simulations,log_scale=False)
+# myplot.plot_my_graph(algorithm, tot_simulations, log_scale=True)
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -132,9 +125,17 @@ myplot.plot_my_graph(algorithm, tot_simulations,log_scale=False)
 
 # call the function
 
-# growth_rate_r = r.compute_growth_rate_r(nh, betaG, betaH, nu, gamma, 0, 3, initial_infected=1)
-# print("Growth rate r computed following Pellis_markov: " + str(growth_rate_r))
+growth_rate_r = r.compute_growth_rate_r(nh, betaG, betaH, nu, gamma, 0, 1, initial_infected=1)
+print("Growth rate r computed following Pellis_markov: " + str(growth_rate_r))
 # outputR.write("Growth rate computed following Pellis_markov: " + str(growth_rate_r))
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+R_star = r.Rstar_from_r(nh, betaG, betaH, nu, gamma, a=0, b=1, initial_infected=1)
+print("R_star computed from r using my formula: " + str(R_star))
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -152,8 +153,8 @@ myplot.plot_my_graph(algorithm, tot_simulations,log_scale=False)
 
 # compute R_star following pellis_markov
 
-# Rstar = r.compute_Rstar_following_pellis_markov(nh, betaG, betaH, nu, gamma, initial_infected=1)
-# print("R_star computed following pellis_markov: " + str(Rstar))
+Rstar = r.compute_Rstar_following_pellis_markov(nh, betaG, betaH, nu, gamma, initial_infected=1)
+print("R_star computed following pellis_markov: " + str(Rstar))
 # outputR.write("R_star computed following pellis_r: " + str(Rstar))
 
 # ----------------------------------------------------------------------------------------------------------------------

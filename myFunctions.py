@@ -9,6 +9,18 @@ def q(nh, k, betaH, gamma):
     return gamma / (gamma + k * betaH)
 
 
+def p_pellis(a, m, s, nh, betaH, gamma, nu):
+    summation = 0
+
+    for k in range(m, s):
+        # two options
+        # here we use the exact same formula as Pellis to compute q(k)
+        summation = summation + pow(-1, k - m) * math.comb(s - m, k - m) * pow(q(nh, k, betaH, gamma), a)
+        # here we use the transition matrix
+        # summation = summation + pow(-1, k - m) * comb(s - m, k - m) * pow(q_from_matrix[k], a)
+    return math.comb(s, m) * summation
+
+
 def p(a, m, s, nh, betaH, gamma, nu):
     transition_matrix, states_to_id, id_to_states = get_discrete_transition_matrix(nh, betaH, nu, gamma, 1)
     id_target_state = np.zeros(nh, dtype=int)
@@ -31,7 +43,7 @@ def p(a, m, s, nh, betaH, gamma, nu):
     return p[m]
 
 
-def mu(nh, a, s, k, betaH, gamma, nu):
+def mu(nh, a, s, k, betaH, nu, gamma):
     if s == 0:
         return 0
     if k > s:
@@ -40,9 +52,12 @@ def mu(nh, a, s, k, betaH, gamma, nu):
         return a
 
     summation = 0
-    for i in range(1, s - k + 1):
-        summation = p(a, s - i, s, nh, betaH, gamma, nu) * mu(nh, i, s - i, k - 1, betaH, gamma, nu)
-    return summation
+    summation_pellis = 0
+    for i in range(1, s - k + 2):
+        summation = summation + p(a, s - i, s, nh, betaH, gamma, nu) * mu(nh, i, s - i, k - 1, betaH, nu, gamma)
+        summation_pellis = summation_pellis +p_pellis(a, s - i, s, nh, betaH, gamma, nu) * mu(nh, int(i), s - int(i), k - 1, betaH, nu,
+                                                                            gamma)
+    return summation_pellis
 
 
 def get_path_of(algorithm):
@@ -106,7 +121,7 @@ def print_estimation(time, real_data, estimation, ax):
 def g_nh(x, nh, betaG, betaH, gamma, nu):
     summation = 0
     for i in range(nh):
-        summation = summation + (betaG / gamma) * mu(nh, 1, nh - 1, int(i), betaH, gamma, nu) / pow(x, int(i) + 1)
+        summation = summation + (betaG / gamma) * mu(nh, 1, nh - 1, int(i), betaH, nu, gamma) / pow(x, int(i) + 1)
     return 1 - summation
 
 
@@ -152,11 +167,11 @@ def get_data_during_lockdown(path, lockdown_times, lockdown_number):
 
 def laplace_transform_infectious_profile(r, nh, betaG, QH, states_to_id, id_to_states, result=0):
     number_of_states = len(QH[0])
-
+    initial_state = states_to_id[(nh - 1, 0, 1)]
     matrix = QH - (r * np.identity(number_of_states))
     Q_HI = np.linalg.inv(matrix)
     for i in range(number_of_states):
-        result = result + betaG * id_to_states[i][2] * (-Q_HI[1][i])
+        result = result + (betaG * id_to_states[i][2] * (-Q_HI[initial_state][i]))
     return result
 
 
@@ -247,8 +262,8 @@ def get_discrete_transition_matrix(nh, beta, nu, gamma, initial_infected=1):
     return transition_matrix, states_to_id, id_to_states
 
 
-def get_continuous_transition_matrix(nh, beta, nu, gamma):
-    states_to_id, id_to_states, number_of_states = states(nh, 1)
+def get_continuous_transition_matrix(nh, beta, nu, gamma, initial_infected=1):
+    states_to_id, id_to_states, number_of_states = states(nh, initial_infected)
     transition_matrix = np.zeros((number_of_states, number_of_states))
 
     # function in substitution to the map function
@@ -259,6 +274,7 @@ def get_continuous_transition_matrix(nh, beta, nu, gamma):
     for i in range(number_of_states):
         transition_matrix[i][i] = 0
         transition_matrix[i][i] = -sum(transition_matrix[i])
+        #transition_matrix[i][i] = transition_matrix[i][i] - gamma*id_to_states[i][2]
 
     return transition_matrix, states_to_id, id_to_states
 
@@ -267,14 +283,13 @@ def get_QH(nh, beta, nu, gamma, initial_infected=1):
     transition_matrix, states_to_id, id_to_states = get_continuous_transition_matrix(nh, beta, nu, gamma)
 
     slimmed_transition_matrix, slim_states_to_id, slim_id_to_states = slim_transition_matrix(nh, transition_matrix,
-                                                                                             states_to_id,
-                                                                                             id_to_states)
+                                                                                             states_to_id, id_to_states)
     return slimmed_transition_matrix, slim_states_to_id, slim_id_to_states
 
 
 def transfer_probability(beta, nu, gamma, from_S, from_E, from_I, to_S, to_E, to_I, nh):
     if from_S - 1 == to_S:
-        return beta * from_S * from_I / nh
+        return beta * from_S * from_I / (nh-1)
     if from_E - 1 == to_E:
         return nu * from_E
     if from_I - 1 == to_I:
@@ -288,7 +303,7 @@ def set_to_none(data):
 def slim_transition_matrix(nh, transition_matrix, states_to_id, id_to_states):
     number_of_states = len(transition_matrix[0])
     slimmed_transition_matrix = np.zeros((number_of_states - nh, number_of_states - nh))
-    absorbing_states = [None]
+    absorbing_states = []
     slim_id_to_states = {}
     slim_states_to_id = {}
     for i in range(nh):
