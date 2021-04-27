@@ -40,7 +40,7 @@ algorithm = "gillespie_household"
 
 # N:B. it is done following the numbered of Infected individuals
 growth_rate, sd = ad.exponential_regression(algorithm, tot_simulations)
-print("r estimated by the linear regression in the " + algorithm + " algortithm is: " + str(  growth_rate) + " standard deviation " + str(sd) + "\n")
+print("r estimated by the linear regression in the " + algorithm + " algortithm is: " + str(growth_rate) + " standard deviation " + str(sd) + "\n")
 # outputR.write("r estimated by the linear regression in the " + algorithm + " algortithm is: " + str(growth_rate[0]) + "\n")
 
 # ----------------------------------------------------------------------------------------------------------------------
