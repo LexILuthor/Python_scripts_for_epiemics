@@ -1,4 +1,5 @@
 import gc  # garbage collector
+
 import matplotlib.pyplot as plt
 import pandas as pd
 import myFunctions as myFun
@@ -52,6 +53,14 @@ def plot_my_graph(algorithm, tot_simulations, log_scale=False):
         fig.savefig("graph_of_" + algorithm + "log_scale.png")
     else:
         fig.savefig("graph_of_" + algorithm + ".png")
+    '''
+    letter = "R"
+    if log_scale:
+        fig.savefig("r_vari_parametri/" + letter + "/log_scale.png")
+    else:
+        fig.savefig("r_vari_parametri/" + letter + "/myplot.png")
+    '''
+
     fig.show()
 
 
@@ -67,7 +76,7 @@ def plot_lock_down(tot_simulations, algorithm="gillespie_household_lockdown", lo
     # plot style
     # plt.xkcd()
     plt.style.use("ggplot")
-    #plt.tight_layout()
+    # plt.tight_layout()
 
     fig, ax = plt.subplots()
     ax.set_xlim([45, 120])

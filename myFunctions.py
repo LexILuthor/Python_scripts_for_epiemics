@@ -55,8 +55,9 @@ def mu(nh, a, s, k, betaH, nu, gamma):
     summation_pellis = 0
     for i in range(1, s - k + 2):
         summation = summation + p(a, s - i, s, nh, betaH, gamma, nu) * mu(nh, i, s - i, k - 1, betaH, nu, gamma)
-        summation_pellis = summation_pellis +p_pellis(a, s - i, s, nh, betaH, gamma, nu) * mu(nh, int(i), s - int(i), k - 1, betaH, nu,
-                                                                            gamma)
+        summation_pellis = summation_pellis + p_pellis(a, s - i, s, nh, betaH, gamma, nu) * mu(nh, int(i), s - int(i),
+                                                                                               k - 1, betaH, nu,
+                                                                                               gamma)
     return summation_pellis
 
 
@@ -73,8 +74,12 @@ def get_path_of(algorithm):
         return "../Gillespie_algorithm/OutputFIle/gillespie"
     if algorithm.lower() == "sellke":
         return "../Sellke/OutputFile/sellke"
+    if algorithm.lower() == "gillespie_lockdown_gamma":
+        return "../Gillespie_for_Households_gamma_distribution/Output/gillespie_Household_lockdown"
+    if algorithm.lower() == "gillespie_gamma":
+        return "../Gillespie_for_Households_gamma_distribution/Output/gillespie_Household"
     print(
-        "error, the possibie choice are: gillespie, sellke, gillespie_household, gillespie_household_lockdown, test")
+        "error, the possibie choice are: gillespie, sellke, gillespie_household, gillespie_household_lockdown, test,gillespie_gamma,gillespie_lockdown_gamma")
     exit()
 
 
@@ -203,8 +208,7 @@ def initialize_row_of_transition_matrix(id_starting_state, transition_matrix, st
 
 
 def initialize_row_of_transition_matrix_not_normalized(id_starting_state, transition_matrix, states_to_id, id_to_states,
-                                                       beta, nu,
-                                                       gamma, nh):
+                                                       beta, nu, gamma, nh):
     S, E, I = id_to_states[id_starting_state]
     new_exposed_probability = transfer_probability(beta, nu, gamma, S, E, I, S - 1, E + 1, I, nh)
     new_infected_probability = transfer_probability(beta, nu, gamma, S, E, I, S, E - 1, I + 1, nh)
@@ -274,7 +278,7 @@ def get_continuous_transition_matrix(nh, beta, nu, gamma, initial_infected=1):
     for i in range(number_of_states):
         transition_matrix[i][i] = 0
         transition_matrix[i][i] = -sum(transition_matrix[i])
-        #transition_matrix[i][i] = transition_matrix[i][i] - gamma*id_to_states[i][2]
+        # transition_matrix[i][i] = transition_matrix[i][i] - gamma*id_to_states[i][2]
 
     return transition_matrix, states_to_id, id_to_states
 
@@ -289,7 +293,7 @@ def get_QH(nh, beta, nu, gamma, initial_infected=1):
 
 def transfer_probability(beta, nu, gamma, from_S, from_E, from_I, to_S, to_E, to_I, nh):
     if from_S - 1 == to_S:
-        return beta * from_S * from_I / (nh-1)
+        return beta * from_S * from_I / (nh)
     if from_E - 1 == to_E:
         return nu * from_E
     if from_I - 1 == to_I:
@@ -335,3 +339,193 @@ def slim_transition_matrix(nh, transition_matrix, states_to_id, id_to_states):
         row_o = row_o + 1
 
     return slimmed_transition_matrix, slim_states_to_id, slim_id_to_states
+
+
+def old_inverse_Qr_SEIR_3_old(r, nh, betaG, betaH, nu, gamma):
+    lambd = betaH / (nh)
+    result = -1
+
+    Q_0 = 1 / (2 * lambd + gamma + r)
+    result = result + Q_0 * betaG
+
+    Q_2 = ((2 * lambd) / (2 * lambd + gamma + r)) * (1 / (lambd + gamma + nu + r))
+    result = result + Q_2 * betaG
+
+    Q_3 = ((2 * lambd) / (2 * lambd + gamma + r)) * (gamma / (lambd + gamma + nu + r)) * (1 / (nu + r))
+    result = result + Q_3 * betaG * 0
+
+    Q_4 = ((2 * lambd) / (2 * lambd + gamma + r)) * (nu / (lambd + gamma + nu + r)) * (1 / (2 * lambd + 2 * gamma + r))
+    result = result + Q_4 * betaG * 2
+
+    Q_5 = (((2 * lambd) / (2 * lambd + gamma + r)) * (nu / (lambd + gamma + nu + r)) * (
+            (2 * gamma) / (2 * lambd + 2 * gamma + r)) + ((2 * lambd) / (2 * lambd + gamma + r)) * (
+                   gamma / (lambd + gamma + nu + r)) * (nu / (nu + r))) * (1 / (lambd + gamma + r))
+    result = result + Q_5 * betaG
+
+    Q_7 = ((2 * lambd) / (2 * lambd + gamma + r)) * (lambd / (lambd + gamma + nu + r)) * (1 / (gamma + 2 * nu + r))
+    result = result + Q_7 * betaG
+
+    Q_8 = ((2 * lambd) / (2 * lambd + gamma + r)) * (lambd / (lambd + gamma + nu + r)) * (
+            gamma / (gamma + 2 * nu + r)) * (1 / (2 * nu + r))
+    result = result + Q_8 * betaG * 0
+
+    Q_9 = (((2 * lambd) / (2 * lambd + gamma + r)) * (lambd / (lambd + gamma + nu + r)) * (
+            (2 * nu) / (gamma + 2 * nu + r)) + ((2 * lambd) / (2 * lambd + gamma + r)) * (
+                   nu / (lambd + gamma + nu + r)) * ((2 * lambd) / (2 * lambd + 2 * gamma + r))) * (
+                  1 / (2 * gamma + nu + r))
+    result = result + Q_9 * betaG * 2
+
+    Q_10 = ((((2 * lambd) / (2 * lambd + gamma + r)) * (lambd / (lambd + gamma + nu + r)) * (
+            (2 * nu) / (gamma + 2 * nu + r)) + ((2 * lambd) / (2 * lambd + gamma + r)) * (
+                     nu / (lambd + gamma + nu + r)) * ((2 * lambd) / (2 * lambd + 2 * gamma + r))) * (
+                    (2 * gamma) / (2 * gamma + nu + r)) + ((2 * lambd) / (2 * lambd + gamma + r)) * (
+                    lambd / (lambd + gamma + nu + r)) * (
+                    gamma / (gamma + 2 * nu + r)) * ((2 * nu) / (2 * nu + r)) + (
+                    ((2 * lambd) / (2 * lambd + gamma + r)) * (nu / (lambd + gamma + nu + r)) * (
+                    (2 * gamma) / (2 * lambd + 2 * gamma + r)) + ((2 * lambd) / (2 * lambd + gamma + r)) * (
+                            gamma / (lambd + gamma + nu + r)) * (nu / (nu + r))) * (
+                    (lambd) / (lambd + gamma + r))) * (1 / (gamma + nu + r))
+    result = result + Q_10 * betaG
+
+    Q_11 = ((((2 * lambd) / (2 * lambd + gamma + r)) * (lambd / (lambd + gamma + nu + r)) * (
+            (2 * nu) / (gamma + 2 * nu + r)) + ((2 * lambd) / (2 * lambd + gamma + r)) * (
+                     nu / (lambd + gamma + nu + r)) * ((2 * lambd) / (2 * lambd + 2 * gamma + r))) * (
+                    (2 * gamma) / (2 * gamma + nu + r)) + ((2 * lambd) / (2 * lambd + gamma + r)) * (
+                    lambd / (lambd + gamma + nu + r)) * (
+                    gamma / (gamma + 2 * nu + r)) * ((2 * nu) / (2 * nu + r)) + (
+                    ((2 * lambd) / (2 * lambd + gamma + r)) * (nu / (lambd + gamma + nu + r)) * (
+                    (2 * gamma) / (2 * lambd + 2 * gamma + r)) + ((2 * lambd) / (2 * lambd + gamma + r)) * (
+                            gamma / (lambd + gamma + nu + r)) * (nu / (nu + r))) * (
+                    (lambd) / (lambd + gamma + r))) * ((gamma) / (gamma + nu + r)) * (1 / (nu + r))
+    result = result + Q_11 * betaG * 0
+
+    Q_12 = (((2 * lambd) / (2 * lambd + gamma + r)) * (lambd / (lambd + gamma + nu + r)) * (
+            (2 * nu) / (gamma + 2 * nu + r)) + ((2 * lambd) / (2 * lambd + gamma + r)) * (
+                    nu / (lambd + gamma + nu + r)) * ((2 * lambd) / (2 * lambd + 2 * gamma + r))) * (
+                   (nu) / (2 * gamma + nu + r)) * (1 / 3 * gamma + r)
+    result = result + Q_12 * betaG * 3
+
+    Q_13 = ((((2 * lambd) / (2 * lambd + gamma + r)) * (lambd / (lambd + gamma + nu + r)) * (
+            (2 * nu) / (gamma + 2 * nu + r)) + ((2 * lambd) / (2 * lambd + gamma + r)) * (
+                     nu / (lambd + gamma + nu + r)) * ((2 * lambd) / (2 * lambd + 2 * gamma + r))) * (
+                    (nu) / (2 * gamma + nu + r)) * ((3 * gamma) / 3 * gamma + r) + (
+                    (((2 * lambd) / (2 * lambd + gamma + r)) * (lambd / (lambd + gamma + nu + r)) * (
+                            (2 * nu) / (gamma + 2 * nu + r)) + ((2 * lambd) / (2 * lambd + gamma + r)) * (
+                             nu / (lambd + gamma + nu + r)) * ((2 * lambd) / (2 * lambd + 2 * gamma + r))) * (
+                            (2 * gamma) / (2 * gamma + nu + r)) + ((2 * lambd) / (2 * lambd + gamma + r)) * (
+                            lambd / (lambd + gamma + nu + r)) * (
+                            gamma / (gamma + 2 * nu + r)) * ((2 * nu) / (2 * nu + r)) + (
+                            ((2 * lambd) / (2 * lambd + gamma + r)) * (nu / (lambd + gamma + nu + r)) * (
+                            (2 * gamma) / (2 * lambd + 2 * gamma + r)) + ((2 * lambd) / (2 * lambd + gamma + r)) * (
+                                    gamma / (lambd + gamma + nu + r)) * (nu / (nu + r))) * (
+                            (lambd) / (lambd + gamma + r))) * ((nu) / (gamma + nu + r))) * (1 / (2 * gamma + r))
+    result = result + Q_13 * betaG * 2
+
+    Q_14 = (((((2 * lambd) / (2 * lambd + gamma + r)) * (lambd / (lambd + gamma + nu + r)) * (
+            (2 * nu) / (gamma + 2 * nu + r)) + ((2 * lambd) / (2 * lambd + gamma + r)) * (
+                      nu / (lambd + gamma + nu + r)) * ((2 * lambd) / (2 * lambd + 2 * gamma + r))) * (
+                     (nu) / (2 * gamma + nu + r)) * ((3 * gamma) / 3 * gamma + r) + (
+                     (((2 * lambd) / (2 * lambd + gamma + r)) * (lambd / (lambd + gamma + nu + r)) * (
+                             (2 * nu) / (gamma + 2 * nu + r)) + ((2 * lambd) / (2 * lambd + gamma + r)) * (
+                              nu / (lambd + gamma + nu + r)) * ((2 * lambd) / (2 * lambd + 2 * gamma + r))) * (
+                             (2 * gamma) / (2 * gamma + nu + r)) + ((2 * lambd) / (2 * lambd + gamma + r)) * (
+                             lambd / (lambd + gamma + nu + r)) * (
+                             gamma / (gamma + 2 * nu + r)) * ((2 * nu) / (2 * nu + r)) + (
+                             ((2 * lambd) / (2 * lambd + gamma + r)) * (nu / (lambd + gamma + nu + r)) * (
+                             (2 * gamma) / (2 * lambd + 2 * gamma + r)) + ((2 * lambd) / (2 * lambd + gamma + r)) * (
+                                     gamma / (lambd + gamma + nu + r)) * (nu / (nu + r))) * (
+                             (lambd) / (lambd + gamma + r))) * ((nu) / (gamma + nu + r))) * (
+                    (2 * gamma) / (2 * gamma + r)) + (
+                    (((2 * lambd) / (2 * lambd + gamma + r)) * (lambd / (lambd + gamma + nu + r)) * (
+                            (2 * nu) / (gamma + 2 * nu + r)) + ((2 * lambd) / (2 * lambd + gamma + r)) * (
+                             nu / (lambd + gamma + nu + r)) * ((2 * lambd) / (2 * lambd + 2 * gamma + r))) * (
+                            (2 * gamma) / (2 * gamma + nu + r)) + ((2 * lambd) / (2 * lambd + gamma + r)) * (
+                            lambd / (lambd + gamma + nu + r)) * (
+                            gamma / (gamma + 2 * nu + r)) * ((2 * nu) / (2 * nu + r)) + (
+                            ((2 * lambd) / (2 * lambd + gamma + r)) * (nu / (lambd + gamma + nu + r)) * (
+                            (2 * gamma) / (2 * lambd + 2 * gamma + r)) + ((2 * lambd) / (2 * lambd + gamma + r)) * (
+                                    gamma / (lambd + gamma + nu + r)) * (nu / (nu + r))) * (
+                            (lambd) / (lambd + gamma + r))) * ((gamma) / (gamma + nu + r)) * ((nu) / (nu + r))) * (
+                   1 / (gamma + r))
+    result = result + Q_14 * betaG
+
+    return result
+
+
+def inverse_Qr_SEIR_3(r, nh, betaG, betaH, nu, gamma):
+    lambd = betaH / (nh)
+    result = -1
+
+    Q_0 = 1 / (2 * lambd + gamma + r)
+    result = result + Q_0 * betaG
+
+    Q_2 = Q_0 * 2 * lambd / (gamma + nu + lambd + r)
+    result = result + Q_2 * betaG
+
+    Q_3 = Q_2 * (gamma / (nu + r))
+    result = result + Q_3 * betaG * 0
+
+    Q_4 = Q_2 * nu / (2 * lambd + 2 * gamma + r)
+    result = result + Q_4 * betaG * 2
+
+    Q_5 = (Q_3 * nu + Q_4 * 2 * gamma) / (lambd + gamma + r)
+    result = result + Q_5 * betaG
+
+    Q_7 = Q_2 * lambd / (gamma + 2 * nu + r)
+    result = result + Q_7 * betaG
+
+    Q_8 = Q_7 * gamma / (2 * nu + r)
+    result = result + Q_8 * betaG * 0
+
+    Q_9 = (Q_4 * 2 * lambd + Q_7 * 2 * nu) / (2 * gamma + nu + r)
+    result = result + Q_9 * betaG * 2
+
+    Q_10 = (Q_5 * lambd + Q_9 * 2 * gamma + Q_8 * 2 * nu) / (gamma + nu + r)
+    result = result + Q_10 * betaG
+
+    Q_11 = Q_10 * gamma / (nu + r)
+    result = result + Q_11 * betaG * 0
+
+    Q_12 = Q_9 * nu / (3 * gamma + r)
+    result = result + Q_12 * betaG * 3
+
+    Q_13 = (Q_10 * nu + Q_12 * 3 * gamma) / (2 * gamma + r)
+    result = result + Q_13 * betaG * 2
+
+    Q_14 = (Q_11 * nu + Q_13 * 2 * gamma) / (gamma + r)
+    result = result + Q_14 * betaG
+
+    return result
+
+
+def inverse_Qr_SIR(r, nh, betaG, betaH, gamma):
+    # return the value of the cell 1,target_state of the matrix -(Q-r)^-1
+    lambd = betaH / (nh)
+
+    result = 1 / (2 * lambd + gamma + r)
+    target_state1 = betaG * result
+
+    result = (2 * lambd / (2 * lambd + gamma + r)) * (1 / (2 * lambd + 2 * gamma + r))
+    target_state3 = 2 * betaG * result
+
+    result = (2 * lambd / (2 * lambd + gamma + r)) * (2 * gamma / (2 * lambd + 2 * gamma + r)) * (
+            1 / (lambd + gamma + r))
+    target_state4 = betaG * result
+
+    result = (2 * lambd / (2 * lambd + gamma + r)) * (2 * lambd / (2 * lambd + 2 * gamma + r)) * (1 / (3 * gamma + r))
+    target_state6 = 3 * betaG * result
+
+    result = (2 * lambd / (2 * lambd + gamma + r)) * (2 * lambd / (2 * lambd + 2 * gamma + r)) * (
+            3 * gamma / (3 * gamma + r)) + (
+                     (2 * lambd / (2 * lambd + gamma + r)) * (2 * gamma / (2 * lambd + 2 * gamma + r)) * (
+                     lambd / (lambd + gamma + r))) * (1 / (2 * gamma + r))
+    target_state7 = 2 * betaG * result
+
+    result = (2 * lambd / (2 * lambd + gamma + r)) * (2 * lambd / (2 * lambd + 2 * gamma + r)) * (
+            3 * gamma / (3 * gamma + r)) + (
+                     (2 * lambd / (2 * lambd + gamma + r)) * (2 * gamma / (2 * lambd + 2 * gamma + r)) * (
+                     lambd / (lambd + gamma + r))) * (2 * gamma / (2 * gamma + r)) * (1 / (gamma + r))
+
+    target_state8 = betaG * result
+
+    return target_state1 + target_state3 + target_state4 + target_state6 + target_state7 + target_state8 - 1

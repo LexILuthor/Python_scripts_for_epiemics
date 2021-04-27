@@ -86,3 +86,13 @@ def compute_Rstar_following_pellis_markov(nh, betaG, betaH, nu, gamma, initial_i
     for i in range(number_of_states):
         Rstar = Rstar + ((- Q_1[initial_state][i]) * id_to_states[i][2])
     return betaG * Rstar
+
+
+def growth_rate_r_SIR(nh, betaG, betaH, gamma):
+    root = brentq(myFun.inverse_Qr_SIR, 0.01, 100, args=(nh, betaG, betaH, gamma))
+    return root
+
+
+def growth_rate_r_SEIR_3(nh, betaG, betaH, nu, gamma):
+    root = brentq(myFun.inverse_Qr_SEIR_3, 0.01, 100, args=(nh, betaG, betaH, nu, gamma))
+    return root

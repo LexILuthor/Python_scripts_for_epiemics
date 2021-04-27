@@ -36,7 +36,7 @@ def analyze_my_data(algorithm, tot_simulations):
 
 
 def exponential_regression(algorithm, tot_simulations):
-    time_interval = (23, 45)
+    time_interval = (20, 40)
 
     path = myFun.get_path_of(algorithm)
     # plot style
@@ -46,7 +46,7 @@ def exponential_regression(algorithm, tot_simulations):
     fig, ax = plt.subplots()
     ax.set_yscale('log')
 
-    parameters = np.zeros(tot_simulations)
+    parameters = np.zeros(1)
 
     data = pd.read_csv(filepath_or_buffer=path + str(0) + ".csv", header=None)
     I = data[2].values
@@ -77,7 +77,7 @@ def exponential_regression(algorithm, tot_simulations):
         I = data[2].values
         R = data[3].values
         time = data[4].values
-        if R[-1] < S[0] / 2:
+        if R[-1] < (100):
             continue
 
         indexes = np.argwhere(time_interval[0] < time)
@@ -90,13 +90,13 @@ def exponential_regression(algorithm, tot_simulations):
         x = time[start_index:end_index + 1].reshape(-1, 1)
         reg.fit(x, np.log(I[start_index:end_index + 1]))
         y_pred = reg.predict(x)
-        parameters[i] = reg.coef_[0]
+        parameters = np.append(parameters, reg.coef_[0])
 
         myFun.print_estimation(time[start_index:end_index + 1], I[start_index:end_index + 1], np.exp(y_pred), ax)
 
         fig.show()
 
-    return parameters.mean()
+    return parameters.mean(), parameters.var()
 
 
 def logistic_regression(algorithm, tot_simulations):
