@@ -30,7 +30,7 @@ def p(a, m, s, nh, betaH, gamma, nu):
     old_distribution = np.zeros(len(transition_matrix[0, :]))
     current_distribution = np.zeros(len(transition_matrix[0, :]))
 
-    id_initial_state = states_to_id[(s, 0, a)]
+    id_initial_state = states_to_id[(s, a, 0)]
     current_distribution[id_initial_state] = 1
 
     while not ((old_distribution == current_distribution).all()):
@@ -170,9 +170,9 @@ def get_data_during_lockdown(path, lockdown_times, lockdown_number):
 # read the dataset
 
 
-def laplace_transform_infectious_profile(r, nh, betaG, QH, states_to_id, id_to_states, result=0):
+def laplace_transform_infectious_profile(r, nh, betaG, QH, states_to_id, id_to_states, result=-1):
     number_of_states = len(QH[0])
-    initial_state = states_to_id[(nh - 1, 0, 1)]
+    initial_state = states_to_id[(nh - 1, 1, 0)]
     matrix = QH - (r * np.identity(number_of_states))
     Q_HI = np.linalg.inv(matrix)
     for i in range(number_of_states):
@@ -229,29 +229,31 @@ def initialize_row_of_transition_matrix_not_normalized(id_starting_state, transi
 
 def states(nh, initial_infected=1):
     S = nh - initial_infected
-    E = 0
-    I = initial_infected
+    E = initial_infected
+    I = 0
     R = 0
     state_to_id = {}
     id_to_state = {}
     id_counter = 0
-    while S >= 0:
-        tmp_E = E
-        tmp_SI = I
-        while E >= 0:
-            tmp_I = I
-            while I >= 0:
-                state_to_id[(S, E, I)] = id_counter
-                id_to_state[id_counter] = (S, E, I)
-                id_counter = id_counter + 1
-                I = I - 1
 
-            E = E - 1
-            I = tmp_I + 1
+    state_to_id[(S, E, I)] = id_counter
+    id_to_state[id_counter] = (S, E, I)
+    id_counter = id_counter + 1
 
-        S = S - 1
-        E = tmp_E + 1
-        I = tmp_SI
+    s = nh
+    while s >= 0:
+        e = nh
+        while e >= 0:
+            i = nh
+            while i >= 0:
+                if (s + e < nh) and (((s, e, i) in state_to_id) is False and s + e + i <= nh):
+                    state_to_id[(s, e, i)] = id_counter
+                    id_to_state[id_counter] = (s, e, i)
+                    id_counter = id_counter + 1
+                i = i - 1
+            e = e - 1
+        s = s - 1
+
     return state_to_id, id_to_state, id_counter
 
 
@@ -456,7 +458,7 @@ def inverse_Qr_SEIR_3(r, nh, betaG, betaH, nu, gamma):
     lambd = betaH / (nh)
     result = -1
 
-    Q_0 = 1 / (2 * lambd + gamma + r)
+    Q_0 = 1 / (2 * lambd + gamma + r) * (nu / (nu + r))
     result = result + Q_0 * betaG
 
     Q_2 = Q_0 * 2 * lambd / (gamma + nu + lambd + r)
@@ -529,3 +531,14 @@ def inverse_Qr_SIR(r, nh, betaG, betaH, gamma):
     target_state8 = betaG * result
 
     return target_state1 + target_state3 + target_state4 + target_state6 + target_state7 + target_state8 - 1
+
+
+def read_region_nr(codice_regione):
+    real_data = pd.read_csv('dpc-covid19-ita-regioni.csv')
+    region_data = real_data.loc[real_data['codice_regione'] == codice_regione]
+    return region_data['totale_positivi'].values
+
+
+def stable_sigmoid(x):
+    sig = np.where(x < 0, np.exp(x) / (1 + np.exp(x)), 1 / (1 + np.exp(-x)))
+    return sig

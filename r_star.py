@@ -18,12 +18,13 @@ def betaG_given_r(nh, r, betaG, betaH, nu, gamma, initial_infected=1):
 
     number_of_states = len(QH[0])
 
-    matrix = QH - (r * np.identity(number_of_states - nh))
+    initial_state = states_to_id[(nh - 1, 1, 0)]
+    matrix = QH - (r * np.identity(number_of_states))
     Q_HI = np.linalg.inv(matrix)
-
     result = 0
-    for i in range(number_of_states - nh):
-        result = result + id_to_states[i][2] * (-Q_HI[1][i])
+
+    for i in range(number_of_states):
+        result = result + id_to_states[i][2] * (-Q_HI[initial_state][i])
     return 1 / result
 
 
@@ -41,7 +42,7 @@ def R0_from_r(algorithm, tot_simulations, nu, gamma):
 def Rstar_from_r(nh, betaG, betaH, nu, gamma, a, b, initial_infected):
     r = compute_growth_rate_r(nh, betaG, betaH, nu, gamma, a, b, -1)
     QH, states_to_id, id_to_states = myFun.get_QH(nh, betaH, nu, gamma, initial_infected)
-    initial_state = states_to_id[(nh - 1, 0, 1)]
+    initial_state = states_to_id[(nh - 1, 1, 0)]
     QH_1 = np.linalg.inv(QH)
     matrix = np.matmul(QH_1, np.matmul(-(np.identity(len(QH)) / r) + QH_1, QH_1))
     Rstar = 1
@@ -62,7 +63,7 @@ def compute_Rstar_following_pellis_markov(nh, betaG, betaH, nu, gamma, initial_i
     # ------------------------------------------------------------------------------------------------------------------
     '''
     transition_matrix, states_to_id, id_to_states = myFun.get_continuous_transition_matrix(nh, betaH, nu, gamma)
-    initial_state = states_to_id[(nh - 1, 0, 1)]
+    initial_state = states_to_id[(nh - 1, 1, 0)]
     number_of_states = len(transition_matrix[0])
 
     Rstar = 0
@@ -76,7 +77,7 @@ def compute_Rstar_following_pellis_markov(nh, betaG, betaH, nu, gamma, initial_i
     # ------------------------------------------------------------------------------------------------------------------
 
     transition_matrix, states_to_id, id_to_states = myFun.get_QH(nh, betaH, nu, gamma, initial_infected)
-    initial_state = states_to_id[(nh - 1, 0, 1)]
+    initial_state = states_to_id[(nh - 1, 1, 0)]
 
     number_of_states = len(transition_matrix[0])
 
@@ -91,6 +92,12 @@ def compute_Rstar_following_pellis_markov(nh, betaG, betaH, nu, gamma, initial_i
 def growth_rate_r_SIR(nh, betaG, betaH, gamma):
     root = brentq(myFun.inverse_Qr_SIR, 0.01, 100, args=(nh, betaG, betaH, gamma))
     return root
+
+
+def growth_rate_vanilla_model( beta, nu, gamma):
+    R0 = beta / gamma
+    r = -((nu + gamma) / 2) + np.sqrt(((nu + gamma) * (nu + gamma) / 4) + nu * gamma * (R0 - 1))
+    return r
 
 
 def growth_rate_r_SEIR_3(nh, betaG, betaH, nu, gamma):

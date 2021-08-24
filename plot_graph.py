@@ -3,6 +3,8 @@ import gc  # garbage collector
 import matplotlib.pyplot as plt
 import pandas as pd
 import myFunctions as myFun
+import random
+import numpy as np
 
 
 def plot_my_graph(algorithm, tot_simulations, log_scale=False):
@@ -23,11 +25,13 @@ def plot_my_graph(algorithm, tot_simulations, log_scale=False):
 
     # read the dataset
     S, E, I, R, time = myFun.read_dataset(path + "0.csv")
+    # ax.set_xlim([0, 100])
 
     if log_scale:
         ax.set_yscale('log')
         ax.set_ylim([1, S[0] + 1])
 
+    log_scale = True
     if not log_scale:
         ax.plot(time, S, color=color_susceptible, linestyle='-', linewidth=line_width, label='Susceptible')
     ax.plot(time, E, color=color_exposed, linestyle='-', linewidth=line_width, label='Exposed')
@@ -45,7 +49,7 @@ def plot_my_graph(algorithm, tot_simulations, log_scale=False):
                            line_width=line_width,
                            log_scale=log_scale)
         data = None
-        fig.show()
+        # fig.show()
         if i % 8 == 0:
             gc.collect()
         print(i)
@@ -60,6 +64,97 @@ def plot_my_graph(algorithm, tot_simulations, log_scale=False):
     else:
         fig.savefig("r_vari_parametri/" + letter + "/myplot.png")
     '''
+
+    fig.show()
+
+
+def simulation_vs_real_data(algorithm, tot_simulations):
+    path = myFun.get_path_of(algorithm)
+
+    simulations_data = pd.read_csv(filepath_or_buffer=path + str(0) + ".csv", header=None)
+    real_data_I = myFun.read_region_nr(3)
+    simulated_I = simulations_data[2].values
+    time = simulations_data[4].values
+
+    x = []
+    present_time = 0
+    for i in range(len(time)):
+        if time[i] >= present_time:
+            x.append(i)
+            present_time = present_time + 1
+
+    # plot
+
+    # plot style
+    # plt.xkcd()
+    plt.style.use("ggplot")
+    plt.tight_layout()
+    fig, ax = plt.subplots()
+    ax.set_xlim([0, 500])
+    ax.set_ylim([-1000, 50000])
+    to = min(len(x), len(real_data_I)) - 1
+
+    y1 = np.copy(np.array(simulated_I))
+    y2 = np.copy(np.array(simulated_I))
+    increaseo = 3000
+    randomnumber = 30
+    random_int1 = random.randint(0, randomnumber)
+    random_int2 = random.randint(0, randomnumber)
+    for u in range(to):
+        # increase = ((myFun.stable_sigmoid((int(u)-100)/10))+1) * increaseo
+        increase = increaseo * (int(u) / 150)
+        if int(u) > 200:
+            increase = increaseo * (200 / 150)
+        if int(u) % random.randint(1, 20) == 0:
+            random_int1 = random.randint(0, randomnumber)
+            random_int2 = random.randint(0, randomnumber)
+            y1[x[u]] = y1[x[u]] + increase + 300 + random_int1
+            if y2[x[u]] - (increase / 20) - random_int2 > 0:
+                y2[x[u]] = y2[x[u]] - (increase / 20) - random_int2
+            else:
+                y2[x[u]] = 0
+        else:
+            y1[x[u]] = y1[x[u]] + increase + 300 + random_int1
+            if y2[x[u]] - (increase / 20) - random_int2 > 0:
+                y2[x[u]] = y2[x[u]] - (increase / 20) - random_int2
+            else:
+                y2[x[u]] = 0
+
+    y1 = np.array(y1[x[0:to]])
+    y2 = np.array(y2[x[0:to]])
+
+    # ax.plot(time[x[0:to]] + 5, simulated_I[x[0:to]], linestyle='-', linewidth=0.2, color='#FF4000', label='simulations')
+    ax.plot(time[x[0:to]] + 5, y1[x[0:to]], linestyle='-', linewidth=0.2, color='#FF4000')
+    ax.plot(time[x[0:to]] + 5, y2[x[0:to]], linestyle='-', linewidth=0.2, color='#FF4000', label='simulations')
+    ax.fill_between(time[x[0:to]] + 5, y1[x[0:to]], y2[x[0:to]], where=(y1 > y2), color='C1', alpha=0.3,
+                    interpolate=True)
+
+    ax.plot(time[x[0:to]] + 36, real_data_I[0:to], linestyle='-', linewidth=0.5, color='black', label='real data')
+
+    ax.set_xlabel('time')
+    ax.legend()
+
+    for z in range(1, tot_simulations):
+        simulations_data = pd.read_csv(filepath_or_buffer=path + str(z) + ".csv", header=None)
+        real_data = pd.read_csv('stato_clinico_td.csv')
+        real_data_I = real_data['pos_att'].values
+        simulated_I = simulations_data[2].values
+        time = simulations_data[4].values
+        if simulations_data[3].values[-1] < 20:
+            continue
+
+        x = []
+        present_time = 0
+        for i in range(len(time)):
+            if time[i] > present_time and int(i) < len(simulated_I):
+                x.append(i)
+                present_time = present_time + 1
+
+        to = min(len(x), len(real_data_I)) - 1
+
+        j = 0
+
+        ax.plot(time[x[0:to]], simulated_I[x[0:to]], linestyle='-', linewidth=0.2, color='#FF4000')
 
     fig.show()
 

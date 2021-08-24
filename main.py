@@ -1,4 +1,4 @@
-import r_star as r
+﻿import r_star as r
 import analyze_data as ad
 import plot_graph as myplot
 import numpy as np
@@ -7,30 +7,59 @@ import matplotlib.pyplot as plt
 import myFunctions as myFun
 
 # parameters
-number_of_households = 200000
+number_of_households = 20000
 nh = 3
-betaG = 0.5
-betaH = 0.5
-nu = 0.5
-gamma = 0.25
+betaG = 1.136
+betaH = 2.27
+nu = 0.21
+gamma = 0.45
 
-tot_simulations = 10
+tot_simulations = 1
 
 # available
 # functions:
 
 
-algorithm = "gillespie_household"
+algorithm = "gillespie_lockdown_gamma"
+#algorithm = "gillespie_household"
+
 
 # outputR = open("results_on_various_r.txt", "w")
 
 # ----------------------------------------------------------------------------------------------------------------------
-# estimates r using a logistic regression
 
-# N:B. it is done following the numbered of Recovered individuals
-# growth_rate = ad.logistic_regression(algorithm, tot_simulations)
-# outputR.write("r estimated by the logistic regression in the " + algorithm + " algortithm is: " + str(    ad.logistic_regression(algorithm, tot_simulations)[0]) + "\n")
-# print("r estimated by the logistic regression in the " + algorithm + " algortithm is: " + str(growth_rate) + "\n")
+#plot the gaphs of the simulations
+
+#myplot.plot_my_graph(algorithm, tot_simulations, log_scale=False)
+#myplot.plot_my_graph(algorithm, tot_simulations, log_scale=True)
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+
+# !!!!!!!!!!!!!!!!!!! Warning, it computes the result even if there is no outbreak !!!!!!!!!!!!!!!!!!!!
+# get on a file the   S_infinity, total number of infected,  and much more in only one minute!
+
+#ad.analyze_my_data(algorithm, tot_simulations)
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+ad.analyze_final_infected(algorithm, tot_simulations)
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+# compute r for basic model without households
+# r = r.growth_rate_vanilla_model(betaG, nu, gamma)
+# print("r in the vanilla model " + str(r) + "\n")
+# outputR.write("r in the vanilla model " +str(r)+ + "\n")
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -39,9 +68,42 @@ algorithm = "gillespie_household"
 # estimates r using linear regression
 
 # N:B. it is done following the numbered of Infected individuals
-growth_rate, sd = ad.exponential_regression(algorithm, tot_simulations)
-print("r estimated by the linear regression in the " + algorithm + " algortithm is: " + str(growth_rate) + " standard deviation " + str(sd) + "\n")
+#growth_rate, sd = ad.exponential_regression(algorithm, tot_simulations)
+#print("r estimated by the linear regression in the " + algorithm + " algortithm is: " + str(growth_rate) + " standard deviation " + str(sd) + "\n")
 # outputR.write("r estimated by the linear regression in the " + algorithm + " algortithm is: " + str(growth_rate[0]) + "\n")
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+# plot the simulated data against the exponential computed with theory
+
+# N:B. it is done following the numbered of Infected individuals
+# growth_rate, sd = ad.simulation_vs_theory(algorithm, tot_simulations, nh, betaG, betaH, nu, gamma)
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+# compute a new betaG given r and a new nh
+# first compute r for the model with the usual parameters
+# growth_rate_r = r.compute_growth_rate_r(nh, betaG, betaH, nu, gamma, a=0, b=10, initial_infected=1)
+growth_rate_r = 0.2
+new_nh = 7
+new_betaG = r.betaG_given_r(new_nh, growth_rate_r, betaG, betaH, nu, gamma, initial_infected=1)
+print("new betaG " + str(new_betaG))
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+# compute R_star following pellis_markov
+
+Rstar = r.compute_Rstar_following_pellis_markov(nh, betaG, betaH, nu, gamma, initial_infected=1)
+print("beta G is: " + str(betaG) + " R_star computed following pellis_markov: " + str(Rstar))
+# outputR.write("R_star computed following pellis_r: " + str(Rstar))
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -58,19 +120,19 @@ print("Growth rate r computed following Pellis_markov: " + str(growth_rate_r))
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-# plot the gaphs of the simulations
-
-# myplot.plot_my_graph(algorithm, tot_simulations, log_scale=True)
-
-# ----------------------------------------------------------------------------------------------------------------------
-
-
-# ----------------------------------------------------------------------------------------------------------------------
-
 # growth rate r in SEIR model with 3 individuals per household
-growth_rate_r = r.growth_rate_r_SEIR_3(nh, betaG, betaH, nu, gamma)
-print("Growth rate r in SEIR with only 3 people: " + str(growth_rate_r))
+# growth_rate_r = r.growth_rate_r_SEIR_3(nh, betaG, betaH, nu, gamma)
+# print("Growth rate r in SEIR with only 3 people: " + str(growth_rate_r))
 # outputR.write("Growth rate r in SIR: " + str(growth_rate_r))
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+# plot the simulated data against the real data
+
+# N:B. it is done following the numbered of Infected individuals
+myplot.simulation_vs_real_data(algorithm, tot_simulations)
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -78,8 +140,8 @@ print("Growth rate r in SEIR with only 3 people: " + str(growth_rate_r))
 # ----------------------------------------------------------------------------------------------------------------------
 
 # growth rate r in SIR model with 3 individuals per household
-growth_rate_r = r.growth_rate_r_SIR(nh, betaG, betaH, gamma)
-print("Growth rate r in SIR: " + str(growth_rate_r))
+# growth_rate_r = r.growth_rate_r_SIR(nh, betaG, betaH, gamma)
+# print("Growth rate r in SIR: " + str(growth_rate_r))
 # outputR.write("Growth rate r in SIR: " + str(growth_rate_r))
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -115,15 +177,6 @@ print("Growth rate r in SIR: " + str(growth_rate_r))
 # R_0_Household = r.R_0_Household(nh, betaG, betaH, gamma, nu)
 # print("R0 Household is: " + str(R_0_Household) + "\n")
 # outputR.write("R0 Household is: " + str(R_0_Household) + "\n")
-
-# ----------------------------------------------------------------------------------------------------------------------
-
-
-# ----------------------------------------------------------------------------------------------------------------------
-
-# get on a file the   S_infinity, total number of infected,  and much more in only one minute!
-
-# ad.analyze_my_data(algorithm, tot_simulations)
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -180,31 +233,22 @@ fig.show()
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-
-# compute a new betaG given r and a new nh
-# first compute r for the model with the usual parameters
-# growth_rate_r = r.compute_growth_rate_r(nh, betaG, betaH, nu, gamma, a=0, b=10, initial_infected=1)
-# new_nh = 21
-# new_betaG = r.betaG_given_r(new_nh, growth_rate_r, betaG, betaH, nu, gamma, initial_infected=1)
-# print("new betaG " + str(new_betaG))
-
-# ----------------------------------------------------------------------------------------------------------------------
-
-# compute R_star following pellis_markov
-
-# Rstar = r.compute_Rstar_following_pellis_markov(nh, betaG, betaH, nu, gamma, initial_infected=1)
-# print("R_star computed following pellis_markov: " + str(Rstar))
-# outputR.write("R_star computed following pellis_r: " + str(Rstar))
-
-# ----------------------------------------------------------------------------------------------------------------------
-
-
-# ----------------------------------------------------------------------------------------------------------------------
 # R_0 computed using r using formula given by Prof
 
 # R0est = r.R0_from_r(algorithm, tot_simulations, nu, gamma)
 # print = ("R_0 computed using r " + R0est + "\n")
 # outputR.write("R_0 computed using r: " + str(R0est) + "\n")
+# ----------------------------------------------------------------------------------------------------------------------
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+# estimates r using a logistic regression
+
+# N:B. it is done following the numbered of Recovered individuals
+# growth_rate = ad.logistic_regression(algorithm, tot_simulations)
+# outputR.write("r estimated by the logistic regression in the " + algorithm + " algortithm is: " + str(    ad.logistic_regression(algorithm, tot_simulations)[0]) + "\n")
+# print("r estimated by the logistic regression in the " + algorithm + " algortithm is: " + str(growth_rate) + "\n")
+
 # ----------------------------------------------------------------------------------------------------------------------
 
 
